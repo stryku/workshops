@@ -30,6 +30,20 @@ namespace algo
     }
     return ret;
   }
+
+  template <typename It, typename It2>
+  constexpr bool equal(It first, It last, It2 first2)
+  {
+    while(first != last)
+    {
+      if(!(*first++ == *first2++))
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
 }
 
 template <typename T, size_t N>
@@ -78,6 +92,14 @@ public:
       return arr + N;
   }
 
+  template <typename rhs_t, size_t rhs_N>
+  constexpr bool operator==(const array<rhs_t, N>& rhs) const
+  {
+    return std::is_same<T, rhs_t>::value && 
+           rhs_N == N && 
+           std::equal(cbegin(), cend(), rhs.cbegin());
+  }
+
 private:
   T arr[N];
 };
@@ -110,6 +132,13 @@ public:
   constexpr size_t size() const
   {
     return m_size;
+  }
+
+  template <size_t rhs_N>
+  constexpr bool operator==(const array<char, rhs_N>& rhs) const
+  {
+    return rhs_N == m_size && 
+           std::equal(m_arr.cbegin(), m_arr.cbegin() + m_size, rhs.cbegin());
   }
 
 private:
@@ -162,12 +191,20 @@ constexpr auto asm_code = "exit"_s;
 
 union reg_ex
 {
+  constexpr reg_ex()
+    : ex{ 0 }
+  {}
+
   uint32_t ex;
   uint16_t x;
 };
 
 union reg_exhl
 {
+  constexpr reg_exhl()
+    : ex{ 0 }
+  {}  
+
   uint32_t ex;
   uint16_t x;
   struct
@@ -176,8 +213,6 @@ union reg_exhl
     uint8_t l;
   } hl;
 };
-
-
 
 template <size_t AmountOfRAM>
 struct machine
@@ -193,11 +228,95 @@ struct machine
   reg_ex si;
 };
 
+namespace tokens
+{
+  constexpr auto exit = "exit"_s;
+}
+
+namespace instructions
+{
+  enum opcode
+  {
+    none,
+
+    exit,
+
+    opcode_count
+  };
+
+  constexpr size_t get_ip_change(opcode instruction)
+  {
+    switch(instruction)
+    {
+      case exit: return 1u;
+
+      default: return 0u;
+    }
+  }
+
+  constexpr size_t get_max_eip_change()
+  {
+    size_t max{ 0u };
+
+    for(size_t instruction_opcode_val = 0u; 
+        instruction_opcode_val < opcode::opcode_count; 
+        ++instruction_opcode_val)
+    {
+      const auto change = get_ip_change(static_cast<opcode>(instruction_opcode_val));
+      if(change > max)
+      {
+        max = change;
+      }
+    }
+
+    return max;
+  }
+}
+
+namespace assemble
+{
+  template <typename token_t>
+  constexpr auto token_to_opcodes(token_t token)
+  {
+    using opcodes_t = array<size_t, instructions::get_max_eip_change()>;
+
+    opcodes_t opcodes;
+    algo::fill(opcodes.begin(), opcodes.end(), instructions::opcode::none);
+
+    if(token == tokens::exit)
+    {
+      opcodes[0] = instructions::opcode::exit;
+    }
+
+    return opcodes;
+  }
+
+  template <size_t AmountOfRAM>
+  class assembler
+  {
+  public:
+    template <typename tokens_t>
+    constexpr auto assemble_tokens(tokens_t tokens) const
+    {
+      size_t ip{ 0 };
+
+      for(const auto token : tokens)
+      {
+        const auto opcodes = token_to_opcodes(token);
+      }
+
+      return machine<AmountOfRAM>{};
+    }
+  };
+}
+
 int main()
 {
   constexpr auto tokens_count = algo::count(asm_code.cbegin(), asm_code.cend(), ' ');
   constexpr splitter<tokens_count> ams_tokenizer;
   constexpr auto tokens = ams_tokenizer.split(asm_code);
+  constexpr assemble::assembler<128> assembler;
+  constexpr auto m = assembler.assemble_tokens(tokens);
 
-  return asm_code[0];
+  return m.a.ex;
 }
