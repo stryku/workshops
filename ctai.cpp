@@ -160,6 +160,38 @@ private:
 
 constexpr auto asm_code = "exit"_s;
 
+union reg_ex
+{
+  uint32_t ex;
+  uint16_t x;
+};
+
+union reg_exhl
+{
+  uint32_t ex;
+  uint16_t x;
+  struct
+  {
+    uint8_t h;
+    uint8_t l;
+  } hl;
+};
+
+
+
+template <size_t AmountOfRAM>
+struct machine
+{
+  array<uint8_t, AmountOfRAM> ram;
+  reg_exhl a;
+  reg_exhl b;
+  reg_exhl c;
+  reg_exhl d;
+  reg_ex sp;
+  reg_ex bp;
+  reg_ex di;
+  reg_ex si;
+};
 
 int main()
 {
