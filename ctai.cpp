@@ -1,31 +1,35 @@
 #include <cstddef>
 #include <iterator>
 #include <algorithm>
+#include <type_traits>
 
-template <typename It, typename OutIt>
-constexpr void copy(It first, It last, OutIt d_first)
+namespace algo
 {
-   while (first != last) {
-        *d_first++ = *first++;
-    }
-}
-
-template <typename It, typename Value>
-constexpr void fill(It first, It last, Value value)
-{
-   while (first != last) {
-        *first++ = value;
-    }
-}
-
-template <typename It, typename Value>
-constexpr size_t count(It first, It last, Value value)
-{
-  size_t ret{ 0u };
-  while (first != last) {
-    ret += *first++ == value;
+  template <typename It, typename OutIt>
+  constexpr void copy(It first, It last, OutIt d_first)
+  {
+    while (first != last) {
+          *d_first++ = *first++;
+      }
   }
-  return ret;
+
+  template <typename It, typename Value>
+  constexpr void fill(It first, It last, Value value)
+  {
+    while (first != last) {
+          *first++ = value;
+      }
+  }
+
+  template <typename It, typename Value>
+  constexpr size_t count(It first, It last, Value value)
+  {
+    size_t ret{ 0u };
+    while (first != last) {
+      ret += *first++ == value;
+    }
+    return ret;
+  }
 }
 
 template <typename T, size_t N>
@@ -38,12 +42,13 @@ public:
     : arr{}
   {}
 
-  template <typename It>
-  constexpr array(It b, It e)
-    : arr{}
+  template <typename... Ts>
+  constexpr array(Ts... args) 
   {
-    copy(b, e, std::begin(arr));
+    const auto list = { args... };
+    algo::copy(list.begin(), list.end(), begin());
   }
+
 
   constexpr const T& operator[](size_t i) const
   {
@@ -77,9 +82,15 @@ private:
   T arr[N];
 };
 
-template <typename It>
-array(It b, It e) -> array<typename std::iterator_traits<It>::value_type, 
-                                       10u>;
+template <typename... Ts>
+array(Ts... args) -> array<std::common_type_t<Ts...>, 
+                           sizeof...(Ts)>;
+
+template <typename T, T... chars>
+constexpr auto operator""_s()
+{
+    return array{chars...};
+}
 
 class small_string
 {
@@ -88,7 +99,7 @@ public:
     : m_arr{}
     , m_size{ 0u }
   {
-    fill(m_arr.begin(), m_arr.end(), '\0');
+    algo::fill(m_arr.begin(), m_arr.end(), '\0');
   }
 
   constexpr void push_back(char c)
@@ -108,32 +119,17 @@ private:
   size_t m_size;
 };
 
-namespace tuple
-{
-  template <typename... Types>
-  struct tuple {};
-
-
-}
-
 template <size_t tokens_count>
-class tokenizer
+class splitter
 {
 public:
   using tokens_array_t = array<small_string, tokens_count>;
 
-  constexpr tokenizer() = default;
-
-  template <typename code_t>
-  constexpr tokenizer(code_t code)
-  {}
-
-  template <typename code_t>
-  constexpr auto tokenize(code_t code) const
+  template <typename string_t>
+  constexpr auto split(string_t string) const
   {
-
     tokens_array_t tokens;
-    auto ptr = code.begin();
+    auto ptr = string.begin();
 
     for(size_t i = 0u; i < tokens_count; ++i)
     {
@@ -162,22 +158,14 @@ private:
   }
 };
 
-//template <typename code_t>
-//tokenizer(code_t code) -> tokenizer<count(code.begin(), code.end(), ' ')>;
+constexpr auto asm_code = "exit"_s;
 
-template <typename code_t>
-tokenizer(code_t code) -> tokenizer<count(code.begin(), code.end(), ' ')>;
-
-
-constexpr char raw_asm_code[] = 
-"exit";
 
 int main()
 {
-  constexpr auto asm_code = array(std::cbegin(raw_asm_code), std::cend(raw_asm_code));
-  constexpr auto tokens_count = count(asm_code.cbegin(), asm_code.cend(), ' ');
-  constexpr tokenizer<tokens_count> ams_tokenizer;
-  constexpr auto tokens = ams_tokenizer.tokenize(asm_code);
+  constexpr auto tokens_count = algo::count(asm_code.cbegin(), asm_code.cend(), ' ');
+  constexpr splitter<tokens_count> ams_tokenizer;
+  constexpr auto tokens = ams_tokenizer.split(asm_code);
 
   return asm_code[0];
 }
