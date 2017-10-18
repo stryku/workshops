@@ -643,6 +643,13 @@ namespace labels
     static_assert(extracted_labels[0].name == begin_label);
     static_assert(extracted_labels[1].name == middle_label);
     static_assert(extracted_labels[2].name == end_label);
+
+    constexpr auto begin_label_ip = 0u;
+    constexpr auto middle_label_ip = instructions::get_ip_change(instructions::instruction::mov_reg_val);
+    constexpr auto end_label_ip =middle_label_ip + instructions::get_ip_change(instructions::instruction::mov_reg_val);
+    static_assert(extracted_labels[0].ip == 0u);
+    static_assert(extracted_labels[1].ip == middle_label_ip);
+    static_assert(extracted_labels[2].ip == end_label_ip);
   }
 
   template <typename labels_t, typename token_t>
