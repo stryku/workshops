@@ -213,7 +213,7 @@ public:
 
   constexpr char* end()
   {
-    return m_arr.end();
+    return begin() + m_size;
   }
 
   template <size_t rhs_N>
@@ -579,7 +579,10 @@ namespace labels
     auto name_end = token.end();
     small_string name;
 
-    algo::copy(name_begin, name_end, name.begin());
+    while(name_begin != name_end)
+    {
+      name.push_back(*name_begin++);
+    }
 
     return name;
   }
@@ -611,13 +614,35 @@ namespace labels
         const auto token_count = instructions::get_token_count(instruction);
 
         algo::advance(current_token_it, token_count);
-        //current_token_it += ip_change;
 
         ip += ip_change;
       }
     }
 
     return labels;
+  }
+
+  namespace tests
+  {
+    constexpr auto text = ":begin "
+                          "mov eax , 1 "
+                          ":middle "
+                          "mov eax , 1 "
+                          ":end"_s;
+    constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
+    constexpr splitter<tokens_count> ams_tokenizer;
+    constexpr auto tokens = ams_tokenizer.split(text);
+    constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
+
+    static_assert(extracted_labels.size() == 3);
+    
+    constexpr auto begin_label = "begin"_s;
+    constexpr auto middle_label = "middle"_s;
+    constexpr auto end_label = "end"_s;
+
+    static_assert(extracted_labels[0].name == begin_label);
+    static_assert(extracted_labels[1].name == middle_label);
+    static_assert(extracted_labels[2].name == end_label);
   }
 
   template <typename labels_t, typename token_t>
