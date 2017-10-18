@@ -699,6 +699,23 @@ namespace labels
 
     return result_tokens;
   }
+
+  namespace tests
+  {
+    namespace substitute
+    {
+      constexpr auto text = ":begin "
+                            "mov eax , 1 "
+                            ":middle "
+                            "mov eax , 1 "
+                            ":end"_s;
+      constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
+      constexpr splitter<tokens_count> ams_tokenizer;
+      constexpr auto tokens = ams_tokenizer.split(text);
+      constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
+      constexpr auto substitued_labels = substitute_labels(tokens, extracted_labels);
+    }
+  }
 }
 
 namespace assemble
