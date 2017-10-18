@@ -183,9 +183,12 @@ public:
   template <typename it>
   constexpr small_string(it b, it e)
     : m_arr{}
-    , m_size{ 0u }
+    , m_size{ static_cast<size_t>(e - b) }
   {
-    algo::copy(b, e, begin());
+    for(size_t i = 0u; i < m_size; ++i)
+    {
+      m_arr[i] = *b++;
+    }
   }
 
   constexpr void push_back(char c)
@@ -401,6 +404,7 @@ namespace tokens
   constexpr auto mov = "mov"_s;
   constexpr auto sub = "sub"_s;
   constexpr auto add = "add"_s;
+  constexpr auto cmp = "cmp"_s;
   constexpr auto jge = "jge"_s;
   constexpr auto jmp = "jmp"_s;
   constexpr auto inc = "inc"_s;
@@ -427,11 +431,13 @@ namespace instructions
 
     jge,
     jmp,
+    cmp,
     add_reg_mem,
     sub_reg_val,
     mov_mem_reg_ptr_reg_plus_val,
     mov_reg_mem_ptr_reg_plus_val,
     mov_reg_reg,
+    mov_reg_val,
     inc,
     exit,
 
@@ -444,11 +450,13 @@ namespace instructions
     {
       case jge: return 2u;
       case jmp: return 2u;
+      case cmp: return 3u;
       case add_reg_mem: return 3u;
       case sub_reg_val: return 3u;
       case mov_mem_reg_ptr_reg_plus_val: return 4u;
       case mov_reg_mem_ptr_reg_plus_val: return 4u;
-      case mov_reg_reg: return 2u;
+      case mov_reg_reg: return 3u;
+      case mov_reg_val: return 3u;
       case inc: return 2u;
       case exit: return 1u;
 
@@ -462,15 +470,17 @@ namespace instructions
     {
       case jge: return 2u;
       case jmp: return 2u;
+      case cmp: return 4u;
       case add_reg_mem: return 8u;
       case sub_reg_val: return 4u;
       case mov_mem_reg_ptr_reg_plus_val: return 8u;
       case mov_reg_mem_ptr_reg_plus_val: return 8u;
       case mov_reg_reg: return 4u;
+      case mov_reg_val: return 4u;
       case inc: return 2u;
       case exit: return 1u;
 
-      default: return 50u;
+      default: return 500u;
     }
   }
 
@@ -512,6 +522,7 @@ namespace instructions
     if(token == tokens::sub) return instruction::sub_reg_val;
     if(token == tokens::inc) return instruction::inc;
     if(token == tokens::exit) return instruction::exit;
+    if(token == tokens::cmp) return instruction::cmp;
     if(token == tokens::mov)
     {
       auto next_token = *algo::next(token_it);
@@ -528,9 +539,13 @@ namespace instructions
         {
           return instruction::mov_reg_reg;
         }
-        else
+        else if(token_after_comma == tokens::open_square_bracket)
         {
           return instruction::mov_reg_mem_ptr_reg_plus_val;
+        }
+        else
+        {
+          return instruction::mov_reg_val;
         }
       }
     }
@@ -558,11 +573,15 @@ namespace labels
   };
 
   template <typename token_t>
-  constexpr auto label_name_from_token(token_t token)
+  constexpr small_string label_name_from_token(token_t token)
   {
-    const auto name_begin = std::next(token.begin());
-    const auto name_end = token.end();
-    return small_string{ name_begin, name_end };
+    auto name_begin = algo::next(token.begin());
+    auto name_end = token.end();
+    small_string name;
+
+    algo::copy(name_begin, name_end, name.begin());
+
+    return name;
   }
 
   template <size_t labels_count, typename tokens_t>
@@ -578,7 +597,7 @@ namespace labels
     {
       if(current_token_it->front() == ':')
       {
-        const auto name = label_name_from_token(*current_token_it);
+        auto name = label_name_from_token(*current_token_it);
 
         label_metadata metadata(name, ip);
         labels.push_back(metadata);
@@ -688,6 +707,31 @@ namespace assemble
 }
 
 constexpr auto asm_code = 
+    "mov ebp , esp "
+    "sub esp , 4 "
+    "mov [ ebp + 2 ] , 0 "
+    "mov [ ebp + 3 ] , 1 "
+    "mov [ ebp + 4 ] , 1 "
+    "mov [ ebp + 1 ] , 1 "
+    "mov ecx , 1 "
+":loop "
+    "cmp ecx , 15 " //we want to get 15th fibonacci element
+    "jge .end "
+    "mov eax , [ ebp + 3 ] "
+    "add eax , [ ebp + 2 ] "
+    "mov [ ebp + 4 ] , eax "
+    "mov eax , [ ebp + 3 ] "
+    "mov [ ebp + 2 ] , eax "
+    "mov eax , [ ebp + 4 ] "
+    "mov [ ebp + 3 ] , eax "
+    "mov eax , [ ebp + 1 ] "
+    "inc ecx "
+    "jmp .loop "
+":end "
+    "mov eax , [ ebp + 4 ] "
+    "exit"_s;
+
+constexpr auto asm_code2 = 
     "mov ebp , esp "
     "sub esp , 4 "
     "mov [ ebp + 2 ] , 0 "
