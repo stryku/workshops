@@ -688,10 +688,6 @@ namespace assemble
 }
 
 constexpr auto asm_code = 
-    "a b c"_s;
-
-
-constexpr auto asm_code2 = 
     "mov ebp , esp "
     "sub esp , 4 "
     "mov [ ebp + 2 ] , 0 "
@@ -699,9 +695,9 @@ constexpr auto asm_code2 =
     "mov [ ebp + 4 ] , 1 "
     "mov [ ebp + 1 ] , 1 "
     "mov ecx , 1 "
-":loop_label "
+":loop "
     "cmp ecx , 15 " //we want to get 15th fibonacci element
-    "jge .end_label "
+    "jge .end "
     "mov eax , [ ebp + 3 ] "
     "add eax , [ ebp + 2 ] "
     "mov [ ebp + 4 ] , eax "
@@ -711,8 +707,8 @@ constexpr auto asm_code2 =
     "mov [ ebp + 3 ] , eax "
     "mov eax , [ ebp + 1 ] "
     "inc ecx "
-    "jmp .loop_label "
-":end_label "
+    "jmp .loop "
+":end "
     "mov eax , [ ebp + 4 ] "
     "exit"_s;
 
