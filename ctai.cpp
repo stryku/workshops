@@ -514,7 +514,7 @@ namespace instructions
     if(token == tokens::exit) return instruction::exit;
     if(token == tokens::mov)
     {
-      const auto next_token = *algo::next(token_it);
+      auto next_token = *algo::next(token_it);
 
       if(next_token == tokens::open_square_bracket)
       {
@@ -522,7 +522,7 @@ namespace instructions
       }
       else if(is_register(next_token))
       {
-        const auto token_after_comma = *algo::next(token_it, 3);
+        auto token_after_comma = *algo::next(token_it, 3);
 
         if(is_register(token_after_comma))
         {
