@@ -9,7 +9,9 @@ namespace algo
   constexpr void copy(It first, It last, OutIt d_first)
   {
     while (first != last) {
-          *d_first++ = *first++;
+      const auto val = *first;
+      ++first;
+          *d_first++ = val;
       }
   }
 
@@ -53,6 +55,18 @@ namespace algo
         std::iter_swap(first++, last);
     }
   }
+
+  template <typename it>
+  constexpr it next(it iterator, size_t n = 1)
+  {
+    return iterator + n;
+  }
+
+  template <typename it>
+  constexpr void advance(it &iterator, size_t n = 1)
+  {
+    iterator += n;
+  }
 }
 
 template <typename T, size_t N>
@@ -64,6 +78,25 @@ public:
   constexpr array()
     : arr{}
   {}
+
+  constexpr array(const array& rhs)
+    : arr{}
+  {
+    for(size_t i = 0u; i < N; ++i)
+    {
+      arr[i] = rhs[i];
+    }
+    //algo::copy(rhs.cbegin(), rhs.cend(), begin());
+  }
+
+  constexpr array& operator=(const array& rhs)
+  {
+    for(size_t i = 0u; i < N; ++i)
+    {
+      arr[i] = rhs[i];
+    }
+    return *this;
+  }
 
   template <typename... Ts>
   constexpr array(Ts... args) 
@@ -120,7 +153,7 @@ array(Ts... args) -> array<std::common_type_t<Ts...>,
 template <typename T, T... chars>
 constexpr auto operator""_s()
 {
-    return array{chars...};
+    return array{chars..., '\0'};
 }
 
 class small_string
@@ -131,6 +164,20 @@ public:
     , m_size{ 0u }
   {
     algo::fill(m_arr.begin(), m_arr.end(), '\0');
+  }
+
+  constexpr small_string(const small_string& rhs)
+    : m_arr{}
+    , m_size{ rhs.m_size }
+  {
+    m_arr = rhs.m_arr;
+  }
+
+  constexpr small_string& operator=(const small_string& rhs)
+  {
+    m_size = rhs.size();
+    m_arr = rhs.m_arr;
+    return *this;
   }
   
   template <typename it>
@@ -169,7 +216,7 @@ public:
   template <size_t rhs_N>
   constexpr bool operator==(const array<char, rhs_N>& rhs) const
   {
-    return rhs_N == m_size && 
+    return rhs_N == m_size + 1 && 
            algo::equal(m_arr.cbegin(), m_arr.cbegin() + m_size, rhs.cbegin());
   }
 
@@ -203,7 +250,28 @@ class small_vector
 {
 public:
   constexpr small_vector()
+    : m_size{ 0u }
   {}
+
+  constexpr auto begin()
+  {
+    return m_arr.begin();
+  }
+
+  constexpr auto cbegin() const
+  {
+    return m_arr.cbegin();
+  }
+
+  constexpr auto end()
+  {
+    return m_arr.end();
+  }
+
+  constexpr auto cend() const
+  {
+    return m_arr.cend();
+  }
 
   constexpr void push_back(T val)
   {
@@ -215,6 +283,16 @@ public:
     return m_size;
   }
 
+  constexpr T& operator[](size_t i)
+  {
+    return m_arr[i];
+  }
+
+  constexpr const T& operator[](size_t i) const
+  {
+    return m_arr[i];
+  }
+
 private:
   array<T, N> m_arr;
   size_t m_size;
@@ -224,7 +302,7 @@ template <size_t tokens_count>
 class splitter
 {
 public:
-  using tokens_array_t = array<small_string, tokens_count>;
+  using tokens_array_t = small_vector<small_string, tokens_count>;
 
   template <typename string_t>
   constexpr auto split(string_t string) const
@@ -234,9 +312,9 @@ public:
 
     for(size_t i = 0u; i < tokens_count; ++i)
     {
-      const auto token = get_token(ptr);
-      ptr += token.size();
-      tokens[i] = token;
+      auto token = get_token(ptr);
+      ptr += token.size() + 1;
+      tokens.push_back(token);
     }
 
     return tokens;
@@ -258,6 +336,25 @@ private:
     }
   }
 };
+
+namespace tests
+{
+  namespace split
+  {
+    constexpr auto text = "a b c"_s;
+    constexpr auto splt = splitter<3u>{};
+
+    static_assert(splt.split(text).size() == 3);
+
+    constexpr auto tokens = splt.split(text);
+    constexpr auto a = "a"_s;
+    constexpr auto b = "b"_s;
+    constexpr auto c = "c"_s;
+    static_assert(tokens[0] == a);
+    static_assert(tokens[1] == b);
+    static_assert(tokens[2] == c);
+  }
+}
 
 
 
@@ -334,6 +431,7 @@ namespace instructions
     sub_reg_val,
     mov_mem_reg_ptr_reg_plus_val,
     mov_reg_mem_ptr_reg_plus_val,
+    mov_reg_reg,
     inc,
     exit,
 
@@ -350,10 +448,29 @@ namespace instructions
       case sub_reg_val: return 3u;
       case mov_mem_reg_ptr_reg_plus_val: return 4u;
       case mov_reg_mem_ptr_reg_plus_val: return 4u;
+      case mov_reg_reg: return 2u;
       case inc: return 2u;
       case exit: return 1u;
 
       default: return 0u;
+    }
+  }
+
+  constexpr size_t get_token_count(instruction ints)
+  {
+    switch(ints)
+    {
+      case jge: return 2u;
+      case jmp: return 2u;
+      case add_reg_mem: return 8u;
+      case sub_reg_val: return 4u;
+      case mov_mem_reg_ptr_reg_plus_val: return 8u;
+      case mov_reg_mem_ptr_reg_plus_val: return 8u;
+      case mov_reg_reg: return 4u;
+      case inc: return 2u;
+      case exit: return 1u;
+
+      default: return 50u;
     }
   }
 
@@ -375,10 +492,20 @@ namespace instructions
     return max;
   }
 
+  constexpr auto is_register(small_string token)
+  {
+    return token == tokens::eax ||
+      token == tokens::ebx ||
+      token == tokens::ecx ||
+      token == tokens::edx ||
+      token == tokens::ebp ||
+      token == tokens::esp;
+  }
+
   template <typename tokens_it>
   constexpr auto get_next_instruction(tokens_it token_it)
   {
-    const auto token = *token_it;
+    auto token = *token_it;
     if(token == tokens::jge) return instruction::jge;
     if(token == tokens::jmp) return instruction::jmp;
     if(token == tokens::add) return instruction::add_reg_mem;
@@ -387,16 +514,28 @@ namespace instructions
     if(token == tokens::exit) return instruction::exit;
     if(token == tokens::mov)
     {
-      if(*std::next(token_it) == tokens::open_square_bracket)
+      const auto next_token = *algo::next(token_it);
+
+      if(next_token == tokens::open_square_bracket)
       {
         return instruction::mov_mem_reg_ptr_reg_plus_val;
       }
-      else
+      else if(is_register(next_token))
       {
-        return instruction::mov_reg_mem_ptr_reg_plus_val;
+        const auto token_after_comma = *algo::next(token_it, 3);
+
+        if(is_register(token_after_comma))
+        {
+          return instruction::mov_reg_reg;
+        }
+        else
+        {
+          return instruction::mov_reg_mem_ptr_reg_plus_val;
+        }
       }
     }
-    else return instruction::none;
+    
+    return instruction::none;
   }
 }
 
@@ -444,14 +583,17 @@ namespace labels
         label_metadata metadata(name, ip);
         labels.push_back(metadata);
 
-        std::advance(current_token_it, 1);
+        algo::advance(current_token_it);
       }
       else
       {
         const auto instruction = instructions::get_next_instruction(current_token_it);
         const auto ip_change = instructions::get_ip_change(instruction);
+        const auto token_count = instructions::get_token_count(instruction);
 
-        std::advance(current_token_it, ip_change);
+        algo::advance(current_token_it, token_count);
+        //current_token_it += ip_change;
+
         ip += ip_change;
       }
     }
@@ -546,6 +688,10 @@ namespace assemble
 }
 
 constexpr auto asm_code = 
+    "a b c"_s;
+
+
+constexpr auto asm_code2 = 
     "mov ebp , esp "
     "sub esp , 4 "
     "mov [ ebp + 2 ] , 0 "
@@ -573,9 +719,12 @@ constexpr auto asm_code =
 
 int main()
 {
-  constexpr auto tokens_count = algo::count(asm_code.cbegin(), asm_code.cend(), ' ');
+
+  constexpr auto tokens_count = algo::count(asm_code.cbegin(), asm_code.cend(), ' ') + 1;
   constexpr splitter<tokens_count> ams_tokenizer;
   constexpr auto tokens = ams_tokenizer.split(asm_code);
+
+
   constexpr auto labels_count = algo::count(asm_code.cbegin(), asm_code.cend(), ':');
   constexpr auto labels_metadata = labels::extract_labels<labels_count, decltype(tokens)>(tokens);
 
