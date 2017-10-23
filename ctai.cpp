@@ -223,6 +223,11 @@ public:
            algo::equal(m_arr.cbegin(), m_arr.cbegin() + m_size, rhs.cbegin());
   }
 
+  constexpr bool operator==(const small_string& rhs) const
+  {
+    return *this == rhs.m_arr;
+  }
+
 private:
   static constexpr auto k_max_size = 10;
 
@@ -268,7 +273,7 @@ public:
 
   constexpr auto end()
   {
-    return m_arr.end();
+    return begin() + m_size;
   }
 
   constexpr auto cend() const
@@ -671,14 +676,16 @@ namespace labels
   constexpr auto substitute_labels(tokens_t tokens, labels_metadata_t labels)
   {
     small_vector<small_string, result_tokens_size> result_tokens;
-    auto end = tokens.end();
+    
+    auto end = tokens.cend();
 
-    auto current_token_it = tokens.begin();
+    auto current_token_it = tokens.cbegin();
     while(current_token_it != end)
     {
       if(current_token_it->front() == ':')
       {
-        std::advance(current_token_it, 1);
+        //algo::advance(current_token_it, 1);
+        ++current_token_it;
       }
       else if(current_token_it->front() == '.')
       {
@@ -686,14 +693,15 @@ namespace labels
         const auto str_ip = algo::to_string(ip);
         result_tokens.push_back(str_ip);
 
-        std::advance(current_token_it, 1);
+        //algo::advance(current_token_it, 1);
+        ++current_token_it;
       }
       else
       {
         const auto instruction = instructions::get_next_instruction(current_token_it);
-        const auto ip_change = instructions::get_ip_change(instruction);
+        const auto tokens_count = instructions::get_token_count(instruction);
 
-        std::advance(current_token_it, ip_change);
+        algo::advance(current_token_it, tokens_count);
       }
     }
 
@@ -713,7 +721,7 @@ namespace labels
       constexpr splitter<tokens_count> ams_tokenizer;
       constexpr auto tokens = ams_tokenizer.split(text);
       constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
-      constexpr auto substitued_labels = substitute_labels(tokens, extracted_labels);
+      constexpr auto substitued_labels = substitute_labels<decltype(tokens), decltype(extracted_labels), tokens_count>(tokens, extracted_labels);
     }
   }
 }
