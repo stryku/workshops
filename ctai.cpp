@@ -499,7 +499,7 @@ namespace tokens
   constexpr auto sub = "sub"_s;
   constexpr auto add = "add"_s;
   constexpr auto cmp = "cmp"_s;
-  constexpr auto jge = "jge"_s;
+  constexpr auto je = "je"_s;
   constexpr auto jmp = "jmp"_s;
   constexpr auto inc = "inc"_s;
 
@@ -563,12 +563,29 @@ struct machine
     , esp{ reg_ref(regs::reg::esp) }
   {}
 
-  uint32_t get_reg(regs::reg r)
+  constexpr machine(const machine& rhs)
+    : ram{ rhs.ram }
+    , regs_vals{ rhs.regs_vals }
+    , eax{ reg_ref(regs::reg::eax) }
+    , ebx{ reg_ref(regs::reg::ebx) }
+    , ecx{ reg_ref(regs::reg::ecx) }
+    , edx{ reg_ref(regs::reg::edx) }
+    , ebp{ reg_ref(regs::reg::ebp) }
+    , esp{ reg_ref(regs::reg::esp) }
+  {}
+
+  constexpr machine& operator=(const machine& rhs)
+  {
+      ram = rhs.ram;
+      regs_vals = rhs.regs_vals;
+  }
+
+  constexpr uint32_t get_reg(regs::reg r)
   {
       return reg_ref(r);
   }
 
-  uint32_t set_reg(regs::reg r, uint32_t val)
+  constexpr void set_reg(regs::reg r, uint32_t val)
   {
       reg_ref(r) = val;
   }
@@ -582,18 +599,15 @@ struct machine
   uint32_t& ebp;
   uint32_t& esp;
 
-  bool cf;
-  bool zf;
-  bool sf;
-  bool of;
+  bool zf{false};
 
 private:
-  uint32_t& reg_ref(regs::reg r)
+  constexpr uint32_t& reg_ref(regs::reg r)
   {
       return regs_vals[regs::to_size_t(r)];
   }
 
-  uint32_t regs_vals[static_cast<size_t>(regs::reg::undef)]{};
+  array<uint32_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
 };
 
 namespace instructions
@@ -602,7 +616,7 @@ namespace instructions
   {
     none,
 
-    jge,
+    je,
     jmp,
     cmp,
     add_reg_mem,
@@ -621,7 +635,7 @@ namespace instructions
   {
     switch(ints)
     {
-      case jge: return 2u;
+      case je: return 2u;
       case jmp: return 2u;
       case cmp: return 3u;
       case add_reg_mem: return 3u;
@@ -641,7 +655,7 @@ namespace instructions
   {
     switch(ints)
     {
-      case jge: return 2u;
+      case je: return 2u;
       case jmp: return 2u;
       case cmp: return 4u;
       case add_reg_mem: return 8u;
@@ -689,7 +703,7 @@ namespace instructions
   constexpr auto get_next_instruction(tokens_it token_it)
   {
     auto token = *token_it;
-    if(token == tokens::jge) return instruction::jge;
+    if(token == tokens::je) return instruction::je;
     if(token == tokens::jmp) return instruction::jmp;
     if(token == tokens::add) return instruction::add_reg_mem;
     if(token == tokens::sub) return instruction::sub_reg_val;
@@ -887,13 +901,13 @@ namespace labels
     namespace substitute
     {
       constexpr auto text = ":begin "
-                            "jge .begin "
+                            "je .begin "
                             "mov eax , 1 "
                             ":middle "
-                            "jge .middle "
+                            "je .middle "
                             "mov eax , 1 "
                             ":end "
-                            "jge .end"_s;
+                            "je .end"_s;
       constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
       constexpr splitter<tokens_count> ams_tokenizer;
       constexpr auto tokens = ams_tokenizer.split(text);
@@ -912,7 +926,7 @@ namespace labels
 }
 
 /*
-if(token == tokens::jge) return instruction::jge;
+if(token == tokens::je) return instruction::je;
     if(token == tokens::jmp) return instruction::jmp;
     if(token == tokens::add) return instruction::add_reg_mem;
     if(token == tokens::sub) return instruction::sub_reg_val;
@@ -969,7 +983,7 @@ namespace assemble
         case instructions::instruction::exit: //exit
         break;
 
-        case instructions::instruction::jge: // jge pointer
+        case instructions::instruction::je: // je pointer
         {
             const auto ip = algo::next(token_it)->to_uint();
             opcodes.push_back(ip);
@@ -1108,7 +1122,7 @@ namespace execute
 
         switch(instruction)
         {
-            case instructions::instruction::jge: // jge pointer
+            case instructions::instruction::je: // je pointer
             {
                 if(machine.sf == machine.of)
                 {
@@ -1137,7 +1151,7 @@ namespace execute
                 machine.set_reg(reg, new_reg_val);
             }break;
 
-            case instructions::instruction::sub_reg_val: // sub reg , val
+            case instructions::instruction::sub_reg_val: // sub reg val
             {
                 const auto reg = machine.ram[machine.eip + 1];
                 const auto reg_val = machine.get_reg(reg);
@@ -1155,31 +1169,54 @@ namespace execute
                 machine.set_reg(reg, reg_val + 1);
             }break;
 
-            case instructions::instruction::cmp: // cmp reg , val
+            case instructions::instruction::cmp: // cmp reg val
             {
                 const auto reg = machine.ram[machine.eip + 1];
                 const auto reg_val = machine.get_reg(reg);
                 const auto val = machine.ram[machine.eip + 2];
 
-                const auto zf = reg_val == val;
-                const auto sf = reg_val < val;
-                
+                machine.zf = reg_val == val;
             }break;
 
             case instructions::instruction::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
             {
+                const auto reg = machine.ram[machine.eip + 1];
+                const auto reg_val = machine.get_reg(reg);
+                const auto val = machine.ram[machine.eip + 2];
+                const auto reg2 = machine.ram[machine.eip + 3];
+                const auto reg2_val = machine.get_reg(reg2);
+
+                const auto mem_ptr = reg_val + val;
+                machine.ram[mem_ptr] = reg2_val;
             }break;
 
             case instructions::instruction::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
             {
+                const auto reg = machine.ram[machine.eip + 1];
+                const auto reg2 = machine.ram[machine.eip + 2];
+                const auto reg2_val = machine.get_reg(reg2);
+                const auto val = machine.ram[machine.eip + 3];
+
+                const auto mem_ptr = reg2_val + val;
+                const auto new_reg_val = machine.ram[mem_ptr];
+                machine.set_reg(reg, new_reg_val);
             }break;
 
             case instructions::instruction::mov_reg_reg: // mov reg , reg2
             {
+                const auto reg = machine.ram[machine.eip + 1];
+                const auto reg2 = machine.ram[machine.eip + 2];
+                const auto reg2_val = machine.get_reg(reg2);
+
+                machine.set_reg(reg, reg2_val);
             }break;
 
             case instructions::instruction::mov_reg_val: // mov reg , val
             {
+                const auto reg = machine.ram[machine.eip + 1];
+                const auto val = machine.ram[machine.eip + 2];
+
+                machine.set_reg(reg, val);
             }break;
         }
     }
@@ -1206,7 +1243,7 @@ constexpr auto asm_code =
     "mov ecx , 1 "
 ":loop "
     "cmp ecx , 15 " //we want to get 15th fibonacci element
-    "jge .end "
+    "je .end "
     "mov eax , [ ebp + 3 ] "
     "add eax , [ ebp + 2 ] "
     "mov [ ebp + 4 ] , eax "
@@ -1231,7 +1268,7 @@ constexpr auto asm_code2 =
     "mov ecx , 1 "
 ":loop "
     "cmp ecx , 15 " //we want to get 15th fibonacci element
-    "jge .end "
+    "je .end "
     "mov eax , [ ebp + 3 ] "
     "add eax , [ ebp + 2 ] "
     "mov [ ebp + 4 ] , eax "
@@ -1261,10 +1298,10 @@ int main()
   constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels_metadata), tokens_count>(tokens, extracted_labels_metadata);
 
   constexpr assemble::assembler<1024> assembler;
-  constexpr auto machine = assembler.assemble_tokens(substitued_labels);
+  constexpr auto m = assembler.assemble_tokens(substitued_labels);
 
   //constexpr auto tmp = debug_object(machine.ram);
 
 
-  return machine.esp;
+  return m.esp;
 }
