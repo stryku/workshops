@@ -97,14 +97,14 @@ public:
   constexpr array(const array& rhs)
     : arr{}
   {
-    algo::copy(rhs.cbegin(), rhs.cend(), begin());
+    algo::copy(rhs.begin(), rhs.end(), begin());
   }
 
   constexpr array& operator=(const array& rhs)
   {
     if(this != &rhs)
     {
-      algo::copy(rhs.cbegin(), rhs.cend(), begin());
+      algo::copy(rhs.begin(), rhs.end(), begin());
     }
 
     return *this;
@@ -137,12 +137,12 @@ public:
       return arr + N;
   }
 
-  constexpr const T* cbegin() const
+  constexpr const T* begin() const
   {
       return arr;
   }
 
-  constexpr const T* cend() const
+  constexpr const T* end() const
   {
       return arr + N;
   }
@@ -157,7 +157,7 @@ public:
   {
     return std::is_same<T, rhs_t>::value && 
            rhs_N == N && 
-           algo::equal(cbegin(), cend(), rhs.cbegin());
+           algo::equal(begin(), end(), rhs.begin());
   }
 
 private:
@@ -174,50 +174,42 @@ constexpr auto operator""_a()
     return array{chars..., '\0'};
 }
 
-class small_string
+template <typename T, size_t N>
+class small_vector
 {
 public:
-  constexpr small_string()
-    : m_arr{}
-    , m_size{ 0u }
-  {
-    algo::fill(m_arr.begin(), m_arr.end(), '\0');
-  }
-
-  constexpr small_string(const small_string& rhs)
-    : m_arr{ rhs.m_arr }
-    , m_size{ rhs.m_size }
+  constexpr small_vector()
+    : m_size{ 0u }
   {}
 
-  constexpr small_string& operator=(const small_string& rhs)
+  constexpr char front() const
   {
-    if(this != &rhs)
-    {
-      m_size = rhs.size();
-      m_arr = rhs.m_arr;
-    }
-
-    return *this;
+    return m_arr[0];
   }
 
-  constexpr small_string(char c)
-    : m_arr{}
-    , m_size{ 0u }
+  constexpr auto begin()
   {
-    push_back(c);
-  }
-  
-  template <typename it>
-  constexpr small_string(it b, it e)
-    : m_arr{}
-    , m_size{ static_cast<size_t>(e - b) }
-  {
-    algo::copy(b, e, begin());
+    return m_arr.begin();
   }
 
-  constexpr void push_back(char c)
+  constexpr auto begin() const
   {
-    m_arr[m_size++] = c;
+    return m_arr.begin();
+  }
+
+  constexpr auto end()
+  {
+    return begin() + m_size;
+  }
+
+  constexpr auto end() const
+  {
+    return begin() + m_size;
+  }
+
+  constexpr void push_back(T val)
+  {
+    m_arr[m_size++] = val;
   }
 
   constexpr size_t size() const
@@ -225,39 +217,39 @@ public:
     return m_size;
   }
 
-  constexpr char front() const
-  {
-    return m_arr[0];
-  }
-
-  constexpr char* begin()
-  {
-    return m_arr.begin();
-  }
-
-  constexpr const char* begin() const
-  {
-    return m_arr.cbegin();
-  }
-
-  constexpr char* end()
-  {
-    return begin() + m_size;
-  }
-
-  constexpr const char* end() const
-  {
-    return begin() + m_size;
-  }
-
-  constexpr char& operator[](size_t i)
+  constexpr T& operator[](size_t i)
   {
     return m_arr[i];
   }
 
-  constexpr const char& operator[](size_t i) const
+  constexpr const T& operator[](size_t i) const
   {
     return m_arr[i];
+  }
+
+protected:
+  array<T, N> m_arr;
+  size_t m_size;
+};
+
+class small_string : public small_vector<char, 10u>
+{
+public:
+  constexpr small_string()
+  {
+    algo::fill(m_arr.begin(), m_arr.end(), '\0');
+  }
+
+  constexpr small_string(char c)
+  {
+    push_back(c);
+  }
+  
+  template <typename it>
+  constexpr small_string(it b, it e)
+  {
+    algo::copy(b, e, begin());
+    m_size = static_cast<size_t>(e - b);
   }
 
   constexpr size_t to_uint() const
@@ -277,7 +269,7 @@ public:
   constexpr bool operator==(const array<char, rhs_N>& rhs) const
   {
     return rhs_N - 1 == m_size && // -1 because we assume that array has '\0' at the end
-           algo::equal(m_arr.cbegin(), m_arr.cbegin() + m_size, rhs.cbegin());
+           algo::equal(begin(), end(), rhs.begin());
   }
 
   constexpr bool operator==(const small_string& rhs) const
@@ -285,21 +277,7 @@ public:
     return m_size == rhs.m_size &&
            m_arr == rhs.m_arr;
   }
-
-private:
-  static constexpr auto k_max_size = 10;
-
-  array<char, k_max_size> m_arr;
-  size_t m_size;
 };
-
-
-
-template <typename obj>
-constexpr int debug_object(obj object)
-{
-  return object[999922];
-}
 
 namespace algo
 {
@@ -324,59 +302,6 @@ namespace algo
   }
 }
 
-
-template <typename T, size_t N>
-class small_vector
-{
-public:
-  constexpr small_vector()
-    : m_size{ 0u }
-  {}
-
-  constexpr auto begin()
-  {
-    return m_arr.begin();
-  }
-
-  constexpr auto cbegin() const
-  {
-    return m_arr.cbegin();
-  }
-
-  constexpr auto end()
-  {
-    return begin() + m_size;
-  }
-
-  constexpr auto cend() const
-  {
-    return cbegin() + m_size;
-  }
-
-  constexpr void push_back(T val)
-  {
-    m_arr[m_size++] = val;
-  }
-
-  constexpr size_t size() const
-  {
-    return m_size;
-  }
-
-  constexpr T& operator[](size_t i)
-  {
-    return m_arr[i];
-  }
-
-  constexpr const T& operator[](size_t i) const
-  {
-    return m_arr[i];
-  }
-
-private:
-  array<T, N> m_arr;
-  size_t m_size;
-};
 
 template <size_t tokens_count>
 class splitter
@@ -785,9 +710,9 @@ namespace labels
   {
     small_vector<small_string, result_tokens_size> result_tokens;
     
-    auto end = tokens.cend();
+    auto end = tokens.end();
 
-    auto current_token_it = tokens.cbegin();
+    auto current_token_it = tokens.begin();
     while(current_token_it != end)
     {
       if(current_token_it->front() == ':')
@@ -953,7 +878,7 @@ namespace assemble
       auto opcodes_dest = m.ram.begin();
 
       auto token_it = tokens.begin();
-      while(token_it != tokens.cend())
+      while(token_it != tokens.end())
       {
         auto opcodes = get_next_opcodes(token_it);
         algo::copy(opcodes.begin(), opcodes.end(), opcodes_dest);
@@ -1151,11 +1076,11 @@ constexpr auto asm_code =
 
 int main()
 {
-  constexpr auto tokens_count = algo::count(asm_code.cbegin(), asm_code.cend(), ' ') + 1;
+  constexpr auto tokens_count = algo::count(asm_code.begin(), asm_code.end(), ' ') + 1;
   constexpr splitter<tokens_count> ams_tokenizer;
   constexpr auto tokens = ams_tokenizer.split(asm_code);
 
-  constexpr auto labels_count = algo::count(asm_code.cbegin(), asm_code.cend(), ':');
+  constexpr auto labels_count = algo::count(asm_code.begin(), asm_code.end(), ':');
   constexpr auto labels_metadata = labels::extract_labels<labels_count, decltype(tokens)>(tokens);
   constexpr auto extracted_labels_metadata = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
   constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels_metadata), tokens_count>(tokens, extracted_labels_metadata);
@@ -1225,7 +1150,7 @@ namespace tests
                           ":middle "
                           "mov eax , 1 "
                           ":end"_a;
-    constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
+    constexpr auto tokens_count = algo::count(text.begin(), text.end(), ' ') + 1;
     constexpr splitter<tokens_count> ams_tokenizer;
     constexpr auto tokens = ams_tokenizer.split(text);
     constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
@@ -1266,7 +1191,7 @@ namespace tests
                           "mov eax , 1 "
                           ":end "
                           "je .end"_a;
-    constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
+    constexpr auto tokens_count = algo::count(text.begin(), text.end(), ' ') + 1;
     constexpr splitter<tokens_count> ams_tokenizer;
     constexpr auto tokens = ams_tokenizer.split(text);
     constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
