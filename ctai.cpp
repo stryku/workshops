@@ -174,20 +174,6 @@ constexpr auto operator""_a()
     return array{chars..., '\0'};
 }
 
-namespace tests
-{
-    namespace _a_tests
-    {
-        constexpr auto arr = "arr"_a;
-
-        static_assert(arr.size() == 4u);
-        static_assert(arr[0] == 'a');
-        static_assert(arr[1] == 'r');
-        static_assert(arr[2] == 'r');
-        static_assert(arr[3] == '\0');
-    }
-}
-
 class small_string
 {
 public:
@@ -338,24 +324,6 @@ namespace algo
   }
 }
 
-namespace tests
-{
-  namespace small_string_tests
-  {
-    constexpr auto zero = algo::to_string(0u);
-    constexpr auto one = algo::to_string(1u);
-    constexpr auto twelve = algo::to_string(12u);
-    constexpr auto big = algo::to_string(147129847u);
-
-    constexpr auto expected_zero = "0"_a;
-    constexpr auto expected_one = "1"_a;
-    constexpr auto expected_twelve = "1"_a;
-    constexpr auto expected_big = "147129847"_a;
-
-    static_assert(zero == expected_zero);
-    static_assert(one == expected_one);
-  }
-}
 
 template <typename T, size_t N>
 class small_vector
@@ -454,24 +422,6 @@ private:
   }
 };
 
-namespace tests
-{
-  namespace split
-  {
-    constexpr auto text = "a b c"_a;
-    constexpr auto splt = splitter<3u>{};
-
-    static_assert(splt.split(text).size() == 3);
-
-    constexpr auto tokens = splt.split(text);
-    constexpr auto a = "a"_a;
-    constexpr auto b = "b"_a;
-    constexpr auto c = "c"_a;
-    static_assert(tokens[0] == a);
-    static_assert(tokens[1] == b);
-    static_assert(tokens[2] == c);
-  }
-}
 
 namespace tokens
 {
@@ -829,45 +779,6 @@ namespace labels
     return static_cast<size_t>(label_name[0]);
   }
 
-  namespace tests
-  {
-    constexpr auto text = ":begin "
-                          "mov eax , 1 "
-                          ":middle "
-                          "mov eax , 1 "
-                          ":end"_a;
-    constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
-    constexpr splitter<tokens_count> ams_tokenizer;
-    constexpr auto tokens = ams_tokenizer.split(text);
-    constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
-
-    static_assert(extracted_labels.size() == 3);
-    
-    constexpr auto begin_label = "begin"_a;
-    constexpr auto middle_label = "middle"_a;
-    constexpr auto end_label = "end"_a;
-
-    static_assert(extracted_labels[0].name == begin_label);
-    static_assert(extracted_labels[1].name == middle_label);
-    static_assert(extracted_labels[2].name == end_label);
-
-    constexpr auto begin_label_ip = 0u;
-    constexpr auto middle_label_ip = instructions::get_ip_change(instructions::instruction::mov_reg_val);
-    constexpr auto end_label_ip =middle_label_ip + instructions::get_ip_change(instructions::instruction::mov_reg_val);
-    static_assert(extracted_labels[0].ip == 0u);
-    static_assert(extracted_labels[1].ip == middle_label_ip);
-    static_assert(extracted_labels[2].ip == end_label_ip);
-    
-    constexpr auto begin_label_token = ".begin"_a;
-    constexpr auto middle_label_token = ".middle"_a;
-    constexpr auto end_label_token = ".end"_a;
-
-    static_assert(get_label_ip(extracted_labels, begin_label_token) == 0u);
-    static_assert(get_label_ip(extracted_labels, middle_label_token) == 3u);
-    static_assert(get_label_ip(extracted_labels, end_label_token) == 6u);
-  }
-
-  
 
   template <typename tokens_t, typename labels_metadata_t, size_t result_tokens_size>
   constexpr auto substitute_labels(tokens_t tokens, labels_metadata_t labels)
@@ -899,36 +810,7 @@ namespace labels
 
     return result_tokens;
   }
-
-  namespace tests
-  {
-    namespace substitute
-    {
-      constexpr auto text = ":begin "
-                            "je .begin "
-                            "mov eax , 1 "
-                            ":middle "
-                            "je .middle "
-                            "mov eax , 1 "
-                            ":end "
-                            "je .end"_a;
-      constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
-      constexpr splitter<tokens_count> ams_tokenizer;
-      constexpr auto tokens = ams_tokenizer.split(text);
-      constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
-      constexpr auto substitued_labels = substitute_labels<decltype(tokens), decltype(extracted_labels), tokens_count>(tokens, extracted_labels);
-
-      constexpr auto begin_label_ip_str = "0"_a;
-      constexpr auto middle_label_ip_str = "5"_a;
-      constexpr auto end_label_ip_str = "10"_a;
-
-      static_assert(substitued_labels[1] == begin_label_ip_str);
-      static_assert(substitued_labels[7] == middle_label_ip_str);
-      static_assert(substitued_labels[13] == end_label_ip_str);
-    }
-  }
 }
-
 
 namespace assemble
 {
@@ -1285,3 +1167,118 @@ int main()
 
   return result;
 }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+namespace tests
+{
+  namespace _a_tests
+  {
+      constexpr auto arr = "arr"_a;
+
+      static_assert(arr.size() == 4u);
+      static_assert(arr[0] == 'a');
+      static_assert(arr[1] == 'r');
+      static_assert(arr[2] == 'r');
+      static_assert(arr[3] == '\0');
+  }
+
+  namespace small_string_tests
+  {
+    constexpr auto zero = algo::to_string(0u);
+    constexpr auto one = algo::to_string(1u);
+    constexpr auto twelve = algo::to_string(12u);
+    constexpr auto big = algo::to_string(147129847u);
+
+    constexpr auto expected_zero = "0"_a;
+    constexpr auto expected_one = "1"_a;
+    constexpr auto expected_twelve = "1"_a;
+    constexpr auto expected_big = "147129847"_a;
+
+    static_assert(zero == expected_zero);
+    static_assert(one == expected_one);
+  }
+
+  namespace split
+  {
+    constexpr auto text = "a b c"_a;
+    constexpr auto splt = splitter<3u>{};
+
+    static_assert(splt.split(text).size() == 3);
+
+    constexpr auto tokens = splt.split(text);
+    constexpr auto a = "a"_a;
+    constexpr auto b = "b"_a;
+    constexpr auto c = "c"_a;
+    static_assert(tokens[0] == a);
+    static_assert(tokens[1] == b);
+    static_assert(tokens[2] == c);
+  }
+
+  namespace labels_tests
+  {
+    constexpr auto text = ":begin "
+                          "mov eax , 1 "
+                          ":middle "
+                          "mov eax , 1 "
+                          ":end"_a;
+    constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
+    constexpr splitter<tokens_count> ams_tokenizer;
+    constexpr auto tokens = ams_tokenizer.split(text);
+    constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
+
+    static_assert(extracted_labels.size() == 3);
+    
+    constexpr auto begin_label = "begin"_a;
+    constexpr auto middle_label = "middle"_a;
+    constexpr auto end_label = "end"_a;
+
+    static_assert(extracted_labels[0].name == begin_label);
+    static_assert(extracted_labels[1].name == middle_label);
+    static_assert(extracted_labels[2].name == end_label);
+
+    constexpr auto begin_label_ip = 0u;
+    constexpr auto middle_label_ip = instructions::get_ip_change(instructions::instruction::mov_reg_val);
+    constexpr auto end_label_ip =middle_label_ip + instructions::get_ip_change(instructions::instruction::mov_reg_val);
+    static_assert(extracted_labels[0].ip == 0u);
+    static_assert(extracted_labels[1].ip == middle_label_ip);
+    static_assert(extracted_labels[2].ip == end_label_ip);
+    
+    constexpr auto begin_label_token = ".begin"_a;
+    constexpr auto middle_label_token = ".middle"_a;
+    constexpr auto end_label_token = ".end"_a;
+
+    static_assert(get_label_ip(extracted_labels, begin_label_token) == 0u);
+    static_assert(get_label_ip(extracted_labels, middle_label_token) == 3u);
+    static_assert(get_label_ip(extracted_labels, end_label_token) == 6u);
+  }
+
+  namespace substitute_tests
+  {
+    constexpr auto text = ":begin "
+                          "je .begin "
+                          "mov eax , 1 "
+                          ":middle "
+                          "je .middle "
+                          "mov eax , 1 "
+                          ":end "
+                          "je .end"_a;
+    constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
+    constexpr splitter<tokens_count> ams_tokenizer;
+    constexpr auto tokens = ams_tokenizer.split(text);
+    constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
+    constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels), tokens_count>(tokens, extracted_labels);
+
+    constexpr auto begin_label_ip_str = "0"_a;
+    constexpr auto middle_label_ip_str = "5"_a;
+    constexpr auto end_label_ip_str = "10"_a;
+
+    static_assert(substitued_labels[1] == begin_label_ip_str);
+    static_assert(substitued_labels[7] == middle_label_ip_str);
+    static_assert(substitued_labels[13] == end_label_ip_str);
+  }
+}
+
