@@ -244,7 +244,17 @@ public:
     return m_arr.begin();
   }
 
+  constexpr const char* begin() const
+  {
+    return m_arr.cbegin();
+  }
+
   constexpr char* end()
+  {
+    return begin() + m_size;
+  }
+
+  constexpr const char* end() const
   {
     return begin() + m_size;
   }
@@ -257,6 +267,19 @@ public:
   constexpr const char& operator[](size_t i) const
   {
     return m_arr[i];
+  }
+
+  constexpr size_t to_uint() const
+  {
+      size_t result{ 0u };
+
+      for(const char c : *this)
+      {
+          result += static_cast<size_t>(c - '0');
+          result *= 10;
+      }
+
+      return result;
   }
 
   template <size_t rhs_N>
@@ -281,10 +304,10 @@ private:
 
 
 
-template <typename str>
-constexpr int debug_string(str s)
+template <typename obj>
+constexpr int debug_object(obj object)
 {
-  return s[10];
+  return object[999922];
 }
 
 namespace algo
@@ -469,18 +492,6 @@ union reg_exhl
   } hl;
 };
 
-template <size_t AmountOfRAM>
-struct machine
-{
-  array<size_t, AmountOfRAM> ram;
-  uint32_t eax;
-  uint32_t ebx;
-  uint32_t ecx;
-  uint32_t edx;
-  uint32_t ebp;
-  uint32_t esp;
-};
-
 namespace tokens
 {
   constexpr auto exit = "exit"_s;
@@ -505,6 +516,85 @@ namespace tokens
   constexpr auto esp = "esp"_s;
   constexpr auto ebp = "ebp"_s;
 }
+
+namespace regs
+{
+    enum class reg
+    {
+        eax,
+        ebx,
+        ecx,
+        edx,
+        ebp,
+        esp,
+
+        undef
+    };
+
+    constexpr auto to_size_t(reg r)
+    {
+        return static_cast<size_t>(r);
+    }
+
+    template <typename token_t>
+    constexpr reg token_to_reg(token_t token)
+    {
+        if(token == tokens::eax) return reg::eax;
+        if(token == tokens::ebx) return reg::ebx;
+        if(token == tokens::ecx) return reg::ecx;
+        if(token == tokens::edx) return reg::edx;
+        if(token == tokens::ebp) return reg::ebp;
+        if(token == tokens::esp) return reg::esp;
+
+        return reg::undef;
+    }
+}
+
+template <size_t AmountOfRAM>
+struct machine
+{
+  constexpr machine()
+    : ram{}
+    , eax{ reg_ref(regs::reg::eax) }
+    , ebx{ reg_ref(regs::reg::ebx) }
+    , ecx{ reg_ref(regs::reg::ecx) }
+    , edx{ reg_ref(regs::reg::edx) }
+    , ebp{ reg_ref(regs::reg::ebp) }
+    , esp{ reg_ref(regs::reg::esp) }
+  {}
+
+  uint32_t get_reg(regs::reg r)
+  {
+      return reg_ref(r);
+  }
+
+  uint32_t set_reg(regs::reg r, uint32_t val)
+  {
+      reg_ref(r) = val;
+  }
+
+  array<size_t, AmountOfRAM> ram;
+
+  uint32_t& eax;
+  uint32_t& ebx;
+  uint32_t& ecx;
+  uint32_t& edx;
+  uint32_t& ebp;
+  uint32_t& esp;
+
+  bool cf;
+  bool zf;
+  bool sf;
+  bool of;
+
+private:
+  uint32_t& reg_ref(regs::reg r)
+  {
+      return regs_vals[regs::to_size_t(r)];
+  }
+
+  uint32_t regs_vals[static_cast<size_t>(regs::reg::undef)]{};
+};
 
 namespace instructions
 {
@@ -773,8 +863,7 @@ namespace labels
     {
       if(current_token_it->front() == ':')
       {
-        //algo::advance(current_token_it, 1);
-        ++current_token_it;
+        algo::advance(current_token_it);
       }
       else if(current_token_it->front() == '.')
       {
@@ -782,22 +871,11 @@ namespace labels
         auto str_ip = algo::to_string(ip);
         result_tokens.push_back(str_ip);
 
-        //algo::advance(current_token_it, 1);
-        ++current_token_it;
+        algo::advance(current_token_it);
       }
       else
       {
         result_tokens.push_back(*current_token_it++);
-        //const auto instruction = instructions::get_next_instruction(current_token_it);
-        //const auto tokens_count = instructions::get_token_count(instruction);
-
-        //for(size_t i = 0u; i < tokens_count; ++i)
-       // {
-         // result_tokens.push_back(*current_token_it++);
-       // }
-        
-
-        //algo::advance(current_token_it, tokens_count);
       }
     }
 
@@ -833,20 +911,157 @@ namespace labels
   }
 }
 
+/*
+if(token == tokens::jge) return instruction::jge;
+    if(token == tokens::jmp) return instruction::jmp;
+    if(token == tokens::add) return instruction::add_reg_mem;
+    if(token == tokens::sub) return instruction::sub_reg_val;
+    if(token == tokens::inc) return instruction::inc;
+    if(token == tokens::exit) return instruction::exit;
+    if(token == tokens::cmp) return instruction::cmp;
+    if(token == tokens::mov)
+    {
+      auto next_token = *algo::next(token_it);
+
+      if(next_token == tokens::open_square_bracket)
+      {
+        return instruction::mov_mem_reg_ptr_reg_plus_val;
+      }
+      else if(is_register(next_token))
+      {
+        auto token_after_comma = *algo::next(token_it, 3);
+
+        if(is_register(token_after_comma))
+        {
+          return instruction::mov_reg_reg;
+        }
+        else if(token_after_comma == tokens::open_square_bracket)
+        {
+          return instruction::mov_reg_mem_ptr_reg_plus_val;
+        }
+        else
+        {
+          return instruction::mov_reg_val;
+        }
+      }
+    }
+*/
+
+
 namespace assemble
 {
-  template <typename token_t>
-  constexpr auto token_to_opcodes(token_t token)
+  template <typename token_it_t>
+  constexpr auto get_next_opcodes(token_it_t &token_it)
   {
-    using opcodes_t = array<size_t, instructions::get_max_eip_change()>;
+    using opcodes_t = small_vector<size_t, instructions::get_max_eip_change()>;
 
     opcodes_t opcodes;
     algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
+    
+    auto token = *token_it;
 
-    if(token == tokens::exit)
+    const auto instruction = instructions::get_next_instruction(token_it);
+
+    opcodes.push_back(instruction);
+
+    switch(instruction)
     {
-      opcodes[0] = instructions::instruction::exit;
+        case instructions::instruction::exit: //exit
+        break;
+
+        case instructions::instruction::jge: // jge pointer
+        {
+            const auto ip = algo::next(token_it)->to_uint();
+            opcodes.push_back(ip);
+        }break;
+
+        case instructions::instruction::jmp: // jmp pointer
+        {
+            const auto ip = algo::next(token_it)->to_uint();
+            opcodes.push_back(ip);
+        }break;
+
+        case instructions::instruction::add_reg_mem: // add reg , [ reg2 + val ]
+        {
+            const auto reg = regs::token_to_reg(*algo::next(token_it));
+            const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
+            const auto val = algo::next(token_it, 6)->to_uint();
+
+            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(regs::to_size_t(reg2));
+            opcodes.push_back(val);
+        }break;
+
+        case instructions::instruction::sub_reg_val: // sub reg , val
+        {
+            const auto reg = regs::token_to_reg(*algo::next(token_it));
+            const auto val = algo::next(token_it, 3)->to_uint();
+
+            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(val);
+        }break;
+
+        case instructions::instruction::inc: // inc reg
+        {
+            const auto reg = regs::token_to_reg(*algo::next(token_it));
+            opcodes.push_back(regs::to_size_t(reg));
+        }break;
+
+        case instructions::instruction::cmp: // cmp reg , val
+        {
+            const auto reg = regs::token_to_reg(*algo::next(token_it));
+            const auto val = algo::next(token_it, 3)->to_uint();
+
+            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(val);
+        }break;
+
+        case instructions::instruction::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
+        {
+            const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
+            const auto val = algo::next(token_it, 4)->to_uint();
+            const auto reg2 = regs::token_to_reg(*algo::next(token_it, 7));
+
+            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(val);
+            opcodes.push_back(regs::to_size_t(reg2));
+        }break;
+
+        case instructions::instruction::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
+        {
+            const auto reg = regs::token_to_reg(*algo::next(token_it));
+            const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
+            const auto val = algo::next(token_it, 6)->to_uint();
+
+            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(regs::to_size_t(reg2));
+            opcodes.push_back(val);
+        }break;
+
+        case instructions::instruction::mov_reg_reg: // mov reg , reg2
+        {
+            const auto reg = regs::token_to_reg(*algo::next(token_it));
+            const auto reg2 = regs::token_to_reg(*algo::next(token_it, 3));
+
+            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(regs::to_size_t(reg2));
+        }break;
+
+        case instructions::instruction::mov_reg_val: // mov reg , val
+        {
+            const auto reg = regs::token_to_reg(*algo::next(token_it));
+            const auto val = algo::next(token_it, 3)->to_uint();
+
+            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(val);
+        }break;
+
+        default:
+        break;
     }
+
+    const auto token_count = instructions::get_token_count(instruction);
+    algo::advance(token_it, token_count);
 
     return opcodes;
   }
@@ -859,15 +1074,126 @@ namespace assemble
     constexpr auto assemble_tokens(tokens_t tokens) const
     {
       size_t ip{ 0 };
+      machine<AmountOfRAM> m;
 
-      for(const auto token : tokens)
+      auto token_it = tokens.begin();
+      while(token_it != tokens.cend())
       {
-        const auto opcodes = token_to_opcodes(token);
+        auto opcodes = get_next_opcodes(token_it);
+        for(auto opcode : opcodes)
+        {
+            m.ram[ip++] = opcode;//todo algo::copy
+        }
       }
+      
+      m.esp = ip;
 
-      return machine<AmountOfRAM>{};
+      return m;
     }
   };
+}
+
+namespace execute
+{
+    template <typename machine_t>
+    constexpr auto get_next_instruction(machine_t& machine)
+    {
+        return static_cast<instructions::instruction>(machine.ram[machine.eip]);
+    }
+
+    template <typename machine_t>
+    constexpr void execute_next_instruction(machine_t& machine)
+    {
+        const auto instruction = get_next_instruction(machine);
+
+        switch(instruction)
+        {
+            case instructions::instruction::jge: // jge pointer
+            {
+                if(machine.sf == machine.of)
+                {
+                    const auto new_ip = machine.ram[machine.eip + 1];
+                    machine.eip = new_ip;
+                }
+            }break;
+
+            case instructions::instruction::jmp: // jmp pointer
+            {
+                const auto new_ip = machine.ram[machine.eip + 1];
+                machine.eip = new_ip;
+            }break;
+
+            case instructions::instruction::add_reg_mem: // add reg reg2 val
+            {
+                const auto reg = machine.ram[machine.eip + 1];
+                const auto reg_val = machine.get_reg(reg);
+                const auto reg2_val = machine.get_reg(machine.ram[machine.eip + 2]);
+                const auto val = machine.ram[machine.eip + 3];
+
+                const auto mem_ptr = reg2_val + val;
+                const auto val_to_add = machine.ram[mem_ptr];
+
+                const auto new_reg_val = reg_val + val_to_add;
+                machine.set_reg(reg, new_reg_val);
+            }break;
+
+            case instructions::instruction::sub_reg_val: // sub reg , val
+            {
+                const auto reg = machine.ram[machine.eip + 1];
+                const auto reg_val = machine.get_reg(reg);
+                const auto val = machine.ram[machine.eip + 2];
+
+                const auto new_reg_val = reg_val + val;
+                machine.set_reg(reg, new_reg_val);
+            }break;
+
+            case instructions::instruction::inc: // inc reg
+            {
+                const auto reg = machine.ram[machine.eip + 1];
+                const auto reg_val = machine.get_reg(reg);
+
+                machine.set_reg(reg, reg_val + 1);
+            }break;
+
+            case instructions::instruction::cmp: // cmp reg , val
+            {
+                const auto reg = machine.ram[machine.eip + 1];
+                const auto reg_val = machine.get_reg(reg);
+                const auto val = machine.ram[machine.eip + 2];
+
+                const auto zf = reg_val == val;
+                const auto sf = reg_val < val;
+                
+            }break;
+
+            case instructions::instruction::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
+            {
+            }break;
+
+            case instructions::instruction::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
+            {
+            }break;
+
+            case instructions::instruction::mov_reg_reg: // mov reg , reg2
+            {
+            }break;
+
+            case instructions::instruction::mov_reg_val: // mov reg , val
+            {
+            }break;
+        }
+    }
+
+    template <typename machine_t>
+    constexpr auto execute(machine_t machine)
+    {
+        while(get_next_instruction(machine) != instructions::instruction::exit)
+        {
+            execute_next_instruction(machine);
+        }
+
+        return machine.eax;
+    }
 }
 
 constexpr auto asm_code = 
@@ -931,9 +1257,14 @@ int main()
 
   constexpr auto labels_count = algo::count(asm_code.cbegin(), asm_code.cend(), ':');
   constexpr auto labels_metadata = labels::extract_labels<labels_count, decltype(tokens)>(tokens);
+  constexpr auto extracted_labels_metadata = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
+  constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels_metadata), tokens_count>(tokens, extracted_labels_metadata);
 
-  constexpr assemble::assembler<128> assembler;
-  //constexpr auto m = assembler.assemble_tokens(tokens);
+  constexpr assemble::assembler<1024> assembler;
+  constexpr auto machine = assembler.assemble_tokens(substitued_labels);
 
-  return tokens_count;
+  //constexpr auto tmp = debug_object(machine.ram);
+
+
+  return machine.esp;
 }
