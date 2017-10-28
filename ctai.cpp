@@ -3,33 +3,32 @@
 #include <algorithm>
 #include <type_traits>
 
-
-
 namespace algo
 {
   template <typename It, typename OutIt>
   constexpr void copy(It first, It last, OutIt d_first)
   {
-    while (first != last) {
-      const auto val = *first;
-      ++first;
-          *d_first++ = val;
-      }
+    while (first != last) 
+    {
+      *d_first++ = *first++;
+    }
   }
 
   template <typename It, typename Value>
   constexpr void fill(It first, It last, Value value)
   {
-    while (first != last) {
-          *first++ = value;
-      }
+    while (first != last) 
+    {
+      *first++ = value;
+    }
   }
 
   template <typename It, typename Value>
   constexpr size_t count(It first, It last, Value value)
   {
     size_t ret{ 0u };
-    while (first != last) {
+    while (first != last) 
+    {
       ret += *first++ == value;
     }
     return ret;
@@ -50,16 +49,19 @@ namespace algo
   }
 
   template <typename it>
+  constexpr void iter_swap(it lhs, it rhs)
+  {
+    auto tmp = *rhs;
+    *rhs = *lhs;
+    *lhs = tmp;
+  }
+
+  template <typename it>
   constexpr void reverse(it first, it last)
   {
     while ((first != last) && (first != --last)) 
     {
-      //todo
-      auto tmp = *first;
-      *first = *last;
-      ++first;
-      *last = tmp;
-        //std::iter_swap(first++, last);
+      iter_swap(first++, last);
     }
   }
 
@@ -95,19 +97,16 @@ public:
   constexpr array(const array& rhs)
     : arr{}
   {
-    for(size_t i = 0u; i < N; ++i)
-    {
-      arr[i] = rhs[i];
-    }
-    //algo::copy(rhs.cbegin(), rhs.cend(), begin());
+    algo::copy(rhs.cbegin(), rhs.cend(), begin());
   }
 
   constexpr array& operator=(const array& rhs)
   {
-    for(size_t i = 0u; i < N; ++i)
+    if(this != &rhs)
     {
-      arr[i] = rhs[i];
+      algo::copy(rhs.cbegin(), rhs.cend(), begin());
     }
+
     return *this;
   }
 
@@ -200,17 +199,26 @@ public:
   }
 
   constexpr small_string(const small_string& rhs)
-    : m_arr{}
+    : m_arr{ rhs.m_arr }
     , m_size{ rhs.m_size }
-  {
-    m_arr = rhs.m_arr;
-  }
+  {}
 
   constexpr small_string& operator=(const small_string& rhs)
   {
-    m_size = rhs.size();
-    m_arr = rhs.m_arr;
+    if(this != &rhs)
+    {
+      m_size = rhs.size();
+      m_arr = rhs.m_arr;
+    }
+
     return *this;
+  }
+
+  constexpr small_string(char c)
+    : m_arr{}
+    , m_size{ 0u }
+  {
+    push_back(c);
   }
   
   template <typename it>
@@ -218,10 +226,7 @@ public:
     : m_arr{}
     , m_size{ static_cast<size_t>(e - b) }
   {
-    for(size_t i = 0u; i < m_size; ++i)
-    {
-      m_arr[i] = *b++;
-    }
+    algo::copy(b, e, begin());
   }
 
   constexpr void push_back(char c)
@@ -310,13 +315,6 @@ constexpr int debug_object(obj object)
   return object[999922];
 }
 
-template <char val>
-constexpr int debug_val()
-{
-    static_assert(val);
-    return 0;
-}
-
 namespace algo
 {
   constexpr small_string to_string(size_t number)
@@ -325,9 +323,7 @@ namespace algo
 
     if(number == 0u)
     {
-      small_string str;
-      str.push_back('0');
-      return str;
+      return small_string{'0'};
     }
 
     while(number > 0)
@@ -424,13 +420,14 @@ public:
   constexpr auto split(string_t string) const
   {
     tokens_array_t tokens;
-    auto ptr = string.begin();
+    auto iter = string.begin();
 
     for(size_t i = 0u; i < tokens_count; ++i)
     {
-      auto token = get_token(ptr);
-      ptr += token.size() + 1;
+      auto token = get_token(iter);
       tokens.push_back(token);
+
+      algo::advance(iter, token.size() + 1);
     }
 
     return tokens;
@@ -440,13 +437,17 @@ private:
   constexpr small_string get_token(const char* ptr) const
   {
     if(*ptr == '\0')
+    {
       return {};
+    }
     else
     {
       small_string str;
 
       while(*ptr != ' ' && *ptr != '\0')
+      {
         str.push_back(*ptr++);
+      }
 
       return str;
     }
@@ -471,33 +472,6 @@ namespace tests
     static_assert(tokens[2] == c);
   }
 }
-
-
-
-union reg_ex
-{
-  constexpr reg_ex()
-    : ex{ 0 }
-  {}
-
-  uint32_t ex;
-  uint16_t x;
-};
-
-union reg_exhl
-{
-  constexpr reg_exhl()
-    : ex{ 0 }
-  {}  
-
-  uint32_t ex;
-  uint16_t x;
-  struct
-  {
-    uint8_t h;
-    uint8_t l;
-  } hl;
-};
 
 namespace tokens
 {
@@ -565,44 +539,14 @@ struct machine
   constexpr machine()
     : ram{}
   {
-    eax() = 0u;
-    ebx() = 0u;
-    ecx() = 0u;
-    edx() = 0u;
-    ebp() = 0u;
-    esp() = 0u;
-    eip() = 0u;
+    init_regs();
   }
 
   constexpr machine(const machine& rhs)
     : ram{ rhs.ram }
-    , regs_vals{ rhs.regs_vals }
-  {
-    eax() = 0u;
-    ebx() = 0u;
-    ecx() = 0u;
-    edx() = 0u;
-    ebp() = 0u;
-    esp() = 512;
-    eip() = 0u;
-    
-  }
+    , regs_vals{}
+  {}
 
-  constexpr machine& operator=(const machine& rhs)
-  {
-
-    eax() = 0u;
-    ebx() = 0u;
-    ecx() = 0u;
-    edx() = 0u;
-    ebp() = 0u;
-    esp() = 0u;
-    eip() = 0u;
-
-      ram = rhs.ram;
-      regs_vals = rhs.regs_vals;
-  }
-  
   template <typename reg_t>
   constexpr uint32_t get_reg(reg_t r)
   {
@@ -635,6 +579,17 @@ struct machine
   bool zf{false};
 
 private:
+  constexpr void init_regs()
+  {
+    eax() = 0u;
+    ebx() = 0u;
+    ecx() = 0u;
+    edx() = 0u;
+    ebp() = 0u;
+    esp() = 0u;
+    eip() = 0u;
+  }
+
   template <typename reg_t>
   constexpr uint32_t& reg_ref(reg_t r)
   {
@@ -768,7 +723,7 @@ namespace instructions
           return instruction::mov_mem_val_ptr_reg_plus_val;// mov [ reg + val ] , val2
         }
       }
-      else if(is_register(next_token))
+      else if(is_register(next_token)) // mov reg
       {
         auto token_after_comma = *algo::next(token_it, 3);
 
@@ -797,7 +752,7 @@ namespace labels
   {
     constexpr label_metadata()
       : name{}
-      , ip{ 0 }
+      , ip{ 0u }
     {}
 
     constexpr label_metadata(small_string name, size_t ip)
@@ -813,9 +768,9 @@ namespace labels
   constexpr small_string label_name_from_token(token_t token)
   {
     auto it = algo::next(token.begin());
-
     small_string name;
 
+    //todo cleanup
     while(*it != '\0')
     {
       name.push_back(*it++);
@@ -839,19 +794,18 @@ namespace labels
       {
         auto name = label_name_from_token(*current_token_it);
 
-        label_metadata metadata(name, ip);
-        labels.push_back(metadata);
+        labels.push_back(label_metadata(name, ip));
 
         algo::advance(current_token_it);
       }
       else
       {
         const auto instruction = instructions::get_next_instruction(current_token_it);
-        const auto ip_change = instructions::get_ip_change(instruction);
+        
         const auto token_count = instructions::get_token_count(instruction);
-
         algo::advance(current_token_it, token_count);
 
+        const auto ip_change = instructions::get_ip_change(instruction);
         ip += ip_change;
       }
     }
@@ -1112,17 +1066,16 @@ namespace assemble
     template <typename tokens_t>
     constexpr auto assemble_tokens(tokens_t tokens) const
     {
-      size_t ip{ 0 };
       machine<AmountOfRAM> m;
+
+      auto opcodes_dest = m.ram.begin();
 
       auto token_it = tokens.begin();
       while(token_it != tokens.cend())
       {
         auto opcodes = get_next_opcodes(token_it);
-        for(auto opcode : opcodes)
-        {
-            m.ram[ip++] = opcode;//todo algo::copy
-        }
+        algo::copy(opcodes.begin(), opcodes.end(), opcodes_dest);
+        algo::advance(opcodes_dest, opcodes.size());
       }
       
       m.esp() = AmountOfRAM - 1;
@@ -1257,6 +1210,9 @@ namespace execute
 
                 machine.set_reg(reg, val);
             }break;
+
+            default:
+            break;
         }
 
         return true;
@@ -1316,7 +1272,6 @@ int main()
   constexpr auto tokens_count = algo::count(asm_code.cbegin(), asm_code.cend(), ' ') + 1;
   constexpr splitter<tokens_count> ams_tokenizer;
   constexpr auto tokens = ams_tokenizer.split(asm_code);
-
 
   constexpr auto labels_count = algo::count(asm_code.cbegin(), asm_code.cend(), ':');
   constexpr auto labels_metadata = labels::extract_labels<labels_count, decltype(tokens)>(tokens);
