@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <type_traits>
 
+
+
 namespace algo
 {
   template <typename It, typename OutIt>
@@ -52,7 +54,12 @@ namespace algo
   {
     while ((first != last) && (first != --last)) 
     {
-        std::iter_swap(first++, last);
+      //todo
+      auto tmp = *first;
+      *first = *last;
+      ++first;
+      *last = tmp;
+        //std::iter_swap(first++, last);
     }
   }
 
@@ -60,6 +67,12 @@ namespace algo
   constexpr it next(it iterator, size_t n = 1)
   {
     return iterator + n;
+  }
+
+  template <typename it>
+  constexpr it prev(it iterator, size_t n = 1)
+  {
+    return iterator - n;
   }
 
   template <typename it>
@@ -129,17 +142,23 @@ public:
   {
       return arr;
   }
+
   constexpr const T* cend() const
   {
       return arr + N;
   }
 
+  constexpr auto size() const
+  {
+      return N;
+  }
+
   template <typename rhs_t, size_t rhs_N>
-  constexpr bool operator==(const array<rhs_t, N>& rhs) const
+  constexpr bool operator==(const array<rhs_t, rhs_N>& rhs) const
   {
     return std::is_same<T, rhs_t>::value && 
            rhs_N == N && 
-           std::equal(cbegin(), cend(), rhs.cbegin());
+           algo::equal(cbegin(), cend(), rhs.cbegin());
   }
 
 private:
@@ -154,6 +173,20 @@ template <typename T, T... chars>
 constexpr auto operator""_s()
 {
     return array{chars..., '\0'};
+}
+
+namespace tests
+{
+    namespace _s_tests
+    {
+        constexpr auto arr = "arr"_s;
+
+        static_assert(arr.size() == 4u);
+        static_assert(arr[0] == 'a');
+        static_assert(arr[1] == 'r');
+        static_assert(arr[2] == 'r');
+        static_assert(arr[3] == '\0');
+    }
 }
 
 class small_string
@@ -216,16 +249,27 @@ public:
     return begin() + m_size;
   }
 
+  constexpr char& operator[](size_t i)
+  {
+    return m_arr[i];
+  }
+
+  constexpr const char& operator[](size_t i) const
+  {
+    return m_arr[i];
+  }
+
   template <size_t rhs_N>
   constexpr bool operator==(const array<char, rhs_N>& rhs) const
   {
-    return rhs_N == m_size + 1 && 
+    return rhs_N - 1 == m_size && // -1 because we assume that array has '\0' at the end
            algo::equal(m_arr.cbegin(), m_arr.cbegin() + m_size, rhs.cbegin());
   }
 
   constexpr bool operator==(const small_string& rhs) const
   {
-    return *this == rhs.m_arr;
+    return m_size == rhs.m_size &&
+           m_arr == rhs.m_arr;
   }
 
 private:
@@ -235,21 +279,55 @@ private:
   size_t m_size;
 };
 
+
+
+template <typename str>
+constexpr int debug_string(str s)
+{
+  return s[10];
+}
+
 namespace algo
 {
   constexpr small_string to_string(size_t number)
   {
     small_string result;
 
+    if(number == 0u)
+    {
+      small_string str;
+      str.push_back('0');
+      return str;
+    }
+
     while(number > 0)
     {
-      result.push_back(static_cast<char>(number + '0'));
+      result.push_back(static_cast<char>(number % 10 + '0'));
       number /= 10;
     }
 
     algo::reverse(result.begin(), result.end());
 
     return result;
+  }
+}
+
+namespace tests
+{
+  namespace small_string_tests
+  {
+    constexpr auto zero = algo::to_string(0u);
+    constexpr auto one = algo::to_string(1u);
+    constexpr auto twelve = algo::to_string(12u);
+    constexpr auto big = algo::to_string(147129847u);
+
+    constexpr auto expected_zero = "0"_s;
+    constexpr auto expected_one = "1"_s;
+    constexpr auto expected_twelve = "1"_s;
+    constexpr auto expected_big = "147129847"_s;
+
+    static_assert(zero == expected_zero);
+    static_assert(one == expected_one);
   }
 }
 
@@ -278,7 +356,7 @@ public:
 
   constexpr auto cend() const
   {
-    return m_arr.cend();
+    return cbegin() + m_size;
   }
 
   constexpr void push_back(T val)
@@ -580,13 +658,13 @@ namespace labels
   template <typename token_t>
   constexpr small_string label_name_from_token(token_t token)
   {
-    auto name_begin = algo::next(token.begin());
-    auto name_end = token.end();
+    auto it = algo::next(token.begin());
+
     small_string name;
 
-    while(name_begin != name_end)
+    while(*it != '\0')
     {
-      name.push_back(*name_begin++);
+      name.push_back(*it++);
     }
 
     return name;
@@ -627,6 +705,22 @@ namespace labels
     return labels;
   }
 
+  template <typename labels_t, typename token_t>
+  constexpr size_t get_label_ip(labels_t labels, token_t label_token)
+  {
+    auto label_name = label_name_from_token(label_token);
+
+    for(auto label_metadata : labels)
+    {
+      if(label_metadata.name == label_name)
+      {
+        return label_metadata.ip;
+      }
+    }
+
+    return static_cast<size_t>(label_name[0]);
+  }
+
   namespace tests
   {
     constexpr auto text = ":begin "
@@ -655,22 +749,17 @@ namespace labels
     static_assert(extracted_labels[0].ip == 0u);
     static_assert(extracted_labels[1].ip == middle_label_ip);
     static_assert(extracted_labels[2].ip == end_label_ip);
+    
+    constexpr auto begin_label_token = ".begin"_s;
+    constexpr auto middle_label_token = ".middle"_s;
+    constexpr auto end_label_token = ".end"_s;
+
+    static_assert(get_label_ip(extracted_labels, begin_label_token) == 0u);
+    static_assert(get_label_ip(extracted_labels, middle_label_token) == 3u);
+    static_assert(get_label_ip(extracted_labels, end_label_token) == 6u);
   }
 
-  template <typename labels_t, typename token_t>
-  size_t get_label_ip(labels_t labels, token_t label_token)
-  {
-    const auto label_name = label_name_from_token(label_token);
-    for(const auto label_metadata : labels)
-    {
-      if(label_metadata.name == label_name)
-      {
-        return label_metadata.ip;
-      }
-    }
-
-    return static_cast<size_t>(-1);
-  }
+  
 
   template <typename tokens_t, typename labels_metadata_t, size_t result_tokens_size>
   constexpr auto substitute_labels(tokens_t tokens, labels_metadata_t labels)
@@ -690,7 +779,7 @@ namespace labels
       else if(current_token_it->front() == '.')
       {
         const auto ip = get_label_ip(labels, *current_token_it);
-        const auto str_ip = algo::to_string(ip);
+        auto str_ip = algo::to_string(ip);
         result_tokens.push_back(str_ip);
 
         //algo::advance(current_token_it, 1);
@@ -698,10 +787,17 @@ namespace labels
       }
       else
       {
-        const auto instruction = instructions::get_next_instruction(current_token_it);
-        const auto tokens_count = instructions::get_token_count(instruction);
+        result_tokens.push_back(*current_token_it++);
+        //const auto instruction = instructions::get_next_instruction(current_token_it);
+        //const auto tokens_count = instructions::get_token_count(instruction);
 
-        algo::advance(current_token_it, tokens_count);
+        //for(size_t i = 0u; i < tokens_count; ++i)
+       // {
+         // result_tokens.push_back(*current_token_it++);
+       // }
+        
+
+        //algo::advance(current_token_it, tokens_count);
       }
     }
 
@@ -713,15 +809,26 @@ namespace labels
     namespace substitute
     {
       constexpr auto text = ":begin "
+                            "jge .begin "
                             "mov eax , 1 "
                             ":middle "
+                            "jge .middle "
                             "mov eax , 1 "
-                            ":end"_s;
+                            ":end "
+                            "jge .end"_s;
       constexpr auto tokens_count = algo::count(text.cbegin(), text.cend(), ' ') + 1;
       constexpr splitter<tokens_count> ams_tokenizer;
       constexpr auto tokens = ams_tokenizer.split(text);
       constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
       constexpr auto substitued_labels = substitute_labels<decltype(tokens), decltype(extracted_labels), tokens_count>(tokens, extracted_labels);
+
+      constexpr auto begin_label_ip_str = "0"_s;
+      constexpr auto middle_label_ip_str = "5"_s;
+      constexpr auto end_label_ip_str = "10"_s;
+
+      static_assert(substitued_labels[1] == begin_label_ip_str);
+      static_assert(substitued_labels[7] == middle_label_ip_str);
+      static_assert(substitued_labels[13] == end_label_ip_str);
     }
   }
 }
