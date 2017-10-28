@@ -555,23 +555,11 @@ struct machine
 {
   constexpr machine()
     : ram{}
-    , eax{ reg_ref(regs::reg::eax) }
-    , ebx{ reg_ref(regs::reg::ebx) }
-    , ecx{ reg_ref(regs::reg::ecx) }
-    , edx{ reg_ref(regs::reg::edx) }
-    , ebp{ reg_ref(regs::reg::ebp) }
-    , esp{ reg_ref(regs::reg::esp) }
   {}
 
   constexpr machine(const machine& rhs)
     : ram{ rhs.ram }
     , regs_vals{ rhs.regs_vals }
-    , eax{ reg_ref(regs::reg::eax) }
-    , ebx{ reg_ref(regs::reg::ebx) }
-    , ecx{ reg_ref(regs::reg::ecx) }
-    , edx{ reg_ref(regs::reg::edx) }
-    , ebp{ reg_ref(regs::reg::ebp) }
-    , esp{ reg_ref(regs::reg::esp) }
   {}
 
   constexpr machine& operator=(const machine& rhs)
@@ -592,17 +580,27 @@ struct machine
 
   array<size_t, AmountOfRAM> ram;
 
-  uint32_t& eax;
-  uint32_t& ebx;
-  uint32_t& ecx;
-  uint32_t& edx;
-  uint32_t& ebp;
-  uint32_t& esp;
+  constexpr uint32_t& eax() { return reg_ref(regs::reg::eax); }
+  constexpr const uint32_t& eax() const { return reg_ref(regs::reg::eax); }
+  constexpr uint32_t& ebx() { return reg_ref(regs::reg::ebx); }
+  constexpr const uint32_t& ebx() const { return reg_ref(regs::reg::ebx); }
+  constexpr uint32_t& ecx() { return reg_ref(regs::reg::ecx); }
+  constexpr const uint32_t& ecx() const { return reg_ref(regs::reg::ecx); }
+  constexpr uint32_t& edx() { return reg_ref(regs::reg::edx); }
+  constexpr const uint32_t& edx() const { return reg_ref(regs::reg::edx); }
+  constexpr uint32_t& ebp() { return reg_ref(regs::reg::ebp); }
+  constexpr const uint32_t& ebp() const { return reg_ref(regs::reg::ebp); }
+  constexpr uint32_t& esp() { return reg_ref(regs::reg::esp); }
+  constexpr const uint32_t& esp() const { return reg_ref(regs::reg::esp); }
 
   bool zf{false};
 
 private:
   constexpr uint32_t& reg_ref(regs::reg r)
+  {
+      return regs_vals[regs::to_size_t(r)];
+  }
+  constexpr const uint32_t& reg_ref(regs::reg r) const
   {
       return regs_vals[regs::to_size_t(r)];
   }
@@ -1100,7 +1098,7 @@ namespace assemble
         }
       }
       
-      m.esp = ip;
+      m.esp() = ip;
 
       return m;
     }
@@ -1116,7 +1114,7 @@ namespace execute
     }
 
     template <typename machine_t>
-    constexpr void execute_next_instruction(machine_t& machine)
+    constexpr bool execute_next_instruction(machine_t& machine)
     {
         const auto instruction = get_next_instruction(machine);
 
@@ -1128,6 +1126,7 @@ namespace execute
                 {
                     const auto new_ip = machine.ram[machine.eip + 1];
                     machine.eip = new_ip;
+                    return false;
                 }
             }break;
 
@@ -1135,6 +1134,7 @@ namespace execute
             {
                 const auto new_ip = machine.ram[machine.eip + 1];
                 machine.eip = new_ip;
+                return false;
             }break;
 
             case instructions::instruction::add_reg_mem: // add reg reg2 val
@@ -1219,6 +1219,16 @@ namespace execute
                 machine.set_reg(reg, val);
             }break;
         }
+
+        return true;
+    }
+
+    template <typename machine_t>
+    constexpr void adjust_eip(machine_t& machine)
+    {
+        const auto instruction = get_next_instruction(machine);
+        const auto eip_change = instructions::get_ip_change(instruction);
+        machine.eip += eip_change;
     }
 
     template <typename machine_t>
@@ -1226,7 +1236,11 @@ namespace execute
     {
         while(get_next_instruction(machine) != instructions::instruction::exit)
         {
-            execute_next_instruction(machine);
+            const auto need_to_change_eip = execute_next_instruction(machine);
+            if(need_to_change_eip)
+            {
+                adjust_eip(machine);
+            }
         }
 
         return machine.eax;
@@ -1300,8 +1314,6 @@ int main()
   constexpr assemble::assembler<1024> assembler;
   constexpr auto m = assembler.assemble_tokens(substitued_labels);
 
-  //constexpr auto tmp = debug_object(machine.ram);
 
-
-  return m.esp;
+  return m.esp();
 }
