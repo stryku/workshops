@@ -51,7 +51,7 @@ namespace algo
   template <typename it>
   constexpr void iter_swap(it lhs, it rhs)
   {
-    auto tmp = *rhs;
+    const auto tmp = *rhs;
     *rhs = *lhs;
     *lhs = tmp;
   }
@@ -163,53 +163,6 @@ private:
   size_t m_size;
 };
 
-/*class small_string : public small_vector<char, 10u>
-{
-public:
-  constexpr small_string()
-  {
-    algo::fill(m_arr.begin(), m_arr.end(), '\0');
-  }
-
-  constexpr small_string(char c)
-  {
-    push_back(c);
-  }
-  
-  template <typename it>
-  constexpr small_string(it b, it e)
-  {
-    algo::copy(b, e, begin());
-    m_size = static_cast<size_t>(e - b);
-  }
-
-  constexpr size_t to_uint() const
-  {
-      size_t result{ 0u };
-
-      for(const char c : *this)
-      {
-          result *= 10;
-          result += static_cast<size_t>(c - '0');
-      }
-
-      return result;
-  }
-
-  template <size_t rhs_N>
-  constexpr bool operator==(const array<char, rhs_N>& rhs) const
-  {
-    return rhs_N - 1 == m_size && // -1 because we assume that array has '\0' at the end
-           algo::equal(begin(), end(), rhs.begin());
-  }
-
-  constexpr bool operator==(const small_string& rhs) const
-  {
-    return m_size == rhs.m_size &&
-           m_arr == rhs.m_arr;
-  }
-};*/
-
 template <size_t n>
 class small_string : public small_vector<char, n>
 {
@@ -281,7 +234,6 @@ namespace algo
     return result;
   }
 }
-
 
 template <size_t tokens_count>
 class splitter
@@ -554,15 +506,14 @@ namespace instructions
   template <typename tokens_it>
   constexpr auto get_next_instruction(tokens_it token_it)
   {
-    auto token = *token_it;
-    if(token == tokens::je) return instruction::je;
-    if(token == tokens::jmp) return instruction::jmp;
-    if(token == tokens::add) return instruction::add_reg_mem_ptr_reg_plus_val;
-    if(token == tokens::sub) return instruction::sub_reg_val;
-    if(token == tokens::inc) return instruction::inc;
-    if(token == tokens::exit) return instruction::exit;
-    if(token == tokens::cmp) return instruction::cmp;
-    if(token == tokens::mov)
+    if(auto token = *token_it; token == tokens::je) return instruction::je;
+    else if(token == tokens::jmp) return instruction::jmp;
+    else if(token == tokens::add) return instruction::add_reg_mem_ptr_reg_plus_val;
+    else if(token == tokens::sub) return instruction::sub_reg_val;
+    else if(token == tokens::inc) return instruction::inc;
+    else if(token == tokens::exit) return instruction::exit;
+    else if(token == tokens::cmp) return instruction::cmp;
+    else if(token == tokens::mov)
     {
       auto next_token = *algo::next(token_it);
 
@@ -690,7 +641,7 @@ namespace labels
   {
     small_vector<string, result_tokens_size> result_tokens;
     
-    auto end = tokens.end();
+    const auto end = tokens.end();
 
     auto current_token_it = tokens.begin();
     while(current_token_it != end)
@@ -727,8 +678,7 @@ namespace assemble
     opcodes_t opcodes;
     algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
     
-    auto token = *token_it;
-
+    const auto token = *token_it;
     const auto instruction = instructions::get_next_instruction(token_it);
 
     opcodes.push_back(instruction);
