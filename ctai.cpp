@@ -398,10 +398,9 @@ struct machine
   }
 
   constexpr machine(const machine& rhs)
-    : ram{}
-    , regs_vals{}
-  {
-  }
+    : ram{ rhs.ram }
+    , regs_vals{ rhs.regs_vals }
+  {}
 
   template <typename reg_t>
   constexpr uint32_t get_reg(reg_t r)
@@ -415,7 +414,7 @@ struct machine
       reg_ref(r) = val;
   }
 
-  size_t ram[AmountOfRAM];
+  small_vector<size_t, AmountOfRAM> ram;
 
   constexpr uint32_t& eax() { return reg_ref(regs::reg::eax); }
   constexpr const uint32_t& eax() const { return reg_ref(regs::reg::eax); }
@@ -856,7 +855,7 @@ namespace assemble
     {
       machine<AmountOfRAM> m;
 
-      auto opcodes_dest = m.ram;
+      auto opcodes_dest = m.ram.begin();
 
       auto token_it = tokens.begin();
       while(token_it != tokens.end())
@@ -1031,8 +1030,8 @@ namespace execute
 }
 
 constexpr auto asm_code = 
-    "mov ebp , esp "
     "sub esp , 4 "
+    "mov ebp , esp "
     "mov [ ebp + 2 ] , 0 "
     "mov [ ebp + 3 ] , 1 "
     "mov [ ebp + 4 ] , 1 "
