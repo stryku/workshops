@@ -85,116 +85,30 @@ namespace algo
 }
 
 template <typename T, size_t N>
-class array
-{
-public:
-  using value_type = T;
-
-  constexpr array()
-    : arr{}
-  {}
-
-  constexpr array(const array& rhs)
-    : arr{}
-  {
-    algo::copy(rhs.begin(), rhs.end(), begin());
-  }
-
-  constexpr array& operator=(const array& rhs)
-  {
-    if(this != &rhs)
-    {
-      algo::copy(rhs.begin(), rhs.end(), begin());
-    }
-
-    return *this;
-  }
-
-  template <typename... Ts>
-  constexpr array(Ts... args) 
-  {
-    const auto list = { args... };
-    algo::copy(list.begin(), list.end(), begin());
-  }
-
-
-  constexpr const T& operator[](size_t i) const
-  {
-      return arr[i];
-  }
-
-  constexpr T& operator[](size_t i)
-  {
-      return arr[i];
-  }
-
-  constexpr T* begin()
-  {
-      return arr;
-  }
-  constexpr T* end()
-  {
-      return arr + N;
-  }
-
-  constexpr const T* begin() const
-  {
-      return arr;
-  }
-
-  constexpr const T* end() const
-  {
-      return arr + N;
-  }
-
-  constexpr auto size() const
-  {
-      return N;
-  }
-
-  template <typename rhs_t, size_t rhs_N>
-  constexpr bool operator==(const array<rhs_t, rhs_N>& rhs) const
-  {
-    return std::is_same<T, rhs_t>::value && 
-           rhs_N == N && 
-           algo::equal(begin(), end(), rhs.begin());
-  }
-
-private:
-  T arr[N];
-};
-
-template <typename... Ts>
-array(Ts... args) -> array<std::common_type_t<Ts...>, 
-                           sizeof...(Ts)>;
-
-template <typename T, T... chars>
-constexpr auto operator""_a()
-{
-    return array{chars..., '\0'};
-}
-
-template <typename T, size_t N>
 class small_vector
 {
 public:
+  using value_type = T;
+  using iterator = T*;
+
   constexpr small_vector()
-    : m_size{ 0u }
+    : m_arr{}
+    , m_size{ 0u }
   {}
 
   constexpr char front() const
   {
-    return m_arr[0];
+    return *begin();
   }
 
   constexpr auto begin()
   {
-    return m_arr.begin();
+    return m_arr;
   }
 
-  constexpr auto begin() const
+  constexpr const auto begin() const
   {
-    return m_arr.begin();
+    return m_arr;
   }
 
   constexpr auto end()
@@ -202,7 +116,7 @@ public:
     return begin() + m_size;
   }
 
-  constexpr auto end() const
+  constexpr const auto end() const
   {
     return begin() + m_size;
   }
@@ -227,12 +141,29 @@ public:
     return m_arr[i];
   }
 
+  template <size_t rhs_n>
+  constexpr bool operator==(const small_vector<T, rhs_n>& rhs) const
+  {
+    return size() == rhs.size() &&
+           algo::equal(begin(), end(), rhs.begin());
+  }
+
 protected:
-  array<T, N> m_arr;
+  constexpr auto reserved_end()
+  {
+    return begin() + N;
+  }
+  constexpr const auto reserved_end() const
+  {
+    return begin() + N;
+  }
+
+private:
+  T m_arr[N];
   size_t m_size;
 };
 
-class small_string : public small_vector<char, 10u>
+/*class small_string : public small_vector<char, 10u>
 {
 public:
   constexpr small_string()
@@ -277,17 +208,53 @@ public:
     return m_size == rhs.m_size &&
            m_arr == rhs.m_arr;
   }
+};*/
+
+template <size_t n>
+class small_string : public small_vector<char, n>
+{
+private:
+  using base = small_vector<char, n>;
+
+public:
+  constexpr small_string()
+  {
+    algo::fill(base::begin(), base::reserved_end(), '\0');
+  }
+
+  template <typename... ts>
+  constexpr small_string(ts... chars)
+  {
+    const auto list = { chars... };
+    for(const auto c : list)
+    {
+      base::push_back(c);
+    }
+  }
 };
+
+
+template <typename... ts>
+small_string(ts... args) -> small_string<sizeof...(ts) + 1>;
+
+using string = small_string<10u>;
+
+template <typename T, T... chars>
+constexpr auto operator"" _s()
+{
+  return small_string{ chars... };
+}
 
 namespace algo
 {
-  constexpr small_string to_string(size_t number)
+  constexpr string to_string(size_t number)
   {
-    small_string result;
+    string result;
 
     if(number == 0u)
     {
-      return small_string{'0'};
+      result.push_back('0');
+      return result;
     }
 
     while(number > 0)
@@ -300,6 +267,19 @@ namespace algo
 
     return result;
   }
+
+  constexpr size_t stoui(string str)
+  {
+    size_t result{ 0u };
+
+    for(const char c : str)
+    {
+        result *= 10;
+        result += static_cast<size_t>(c - '0');
+    }
+
+    return result;
+  }
 }
 
 
@@ -307,13 +287,13 @@ template <size_t tokens_count>
 class splitter
 {
 public:
-  using tokens_array_t = small_vector<small_string, tokens_count>;
+  using tokens_array_t = small_vector<string, tokens_count>;
 
   template <typename string_t>
-  constexpr auto split(string_t string) const
+  constexpr auto split(string_t str) const
   {
     tokens_array_t tokens;
-    auto iter = string.begin();
+    auto iter = str.begin();
 
     for(size_t i = 0u; i < tokens_count; ++i)
     {
@@ -327,7 +307,7 @@ public:
   }
 
 private:
-  constexpr small_string get_token(const char* ptr) const
+  constexpr string get_token(const char* ptr) const
   {
     if(*ptr == '\0')
     {
@@ -335,7 +315,7 @@ private:
     }
     else
     {
-      small_string str;
+      string str;
 
       while(*ptr != ' ' && *ptr != '\0')
       {
@@ -350,27 +330,27 @@ private:
 
 namespace tokens
 {
-  constexpr auto exit = "exit"_a;
-  constexpr auto mov = "mov"_a;
-  constexpr auto sub = "sub"_a;
-  constexpr auto add = "add"_a;
-  constexpr auto cmp = "cmp"_a;
-  constexpr auto je = "je"_a;
-  constexpr auto jmp = "jmp"_a;
-  constexpr auto inc = "inc"_a;
+  constexpr auto exit = "exit"_s;
+  constexpr auto mov = "mov"_s;
+  constexpr auto sub = "sub"_s;
+  constexpr auto add = "add"_s;
+  constexpr auto cmp = "cmp"_s;
+  constexpr auto je = "je"_s;
+  constexpr auto jmp = "jmp"_s;
+  constexpr auto inc = "inc"_s;
 
-  constexpr auto comma = ","_a;
-  constexpr auto open_square_bracket = "["_a;
-  constexpr auto close_square_bracket = "]"_a;
-  constexpr auto plus = "+"_a;
+  constexpr auto comma = ","_s;
+  constexpr auto open_square_bracket = "["_s;
+  constexpr auto close_square_bracket = "]"_s;
+  constexpr auto plus = "+"_s;
 
-  constexpr auto eax = "eax"_a;
-  constexpr auto ebx = "ebx"_a;
-  constexpr auto ecx = "ecx"_a;
-  constexpr auto edx = "edx"_a;
+  constexpr auto eax = "eax"_s;
+  constexpr auto ebx = "ebx"_s;
+  constexpr auto ecx = "ecx"_s;
+  constexpr auto edx = "edx"_s;
 
-  constexpr auto esp = "esp"_a;
-  constexpr auto ebp = "ebp"_a;
+  constexpr auto esp = "esp"_s;
+  constexpr auto ebp = "ebp"_s;
 }
 
 namespace regs
@@ -418,9 +398,10 @@ struct machine
   }
 
   constexpr machine(const machine& rhs)
-    : ram{ rhs.ram }
+    : ram{}
     , regs_vals{}
-  {}
+  {
+  }
 
   template <typename reg_t>
   constexpr uint32_t get_reg(reg_t r)
@@ -434,7 +415,7 @@ struct machine
       reg_ref(r) = val;
   }
 
-  array<size_t, AmountOfRAM> ram;
+  size_t ram[AmountOfRAM];
 
   constexpr uint32_t& eax() { return reg_ref(regs::reg::eax); }
   constexpr const uint32_t& eax() const { return reg_ref(regs::reg::eax); }
@@ -476,7 +457,7 @@ private:
       return regs_vals[regs::to_size_t(r)];
   }
 
-  array<uint32_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
+  small_vector<uint32_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
 };
 
 namespace instructions
@@ -561,7 +542,7 @@ namespace instructions
     return max;
   }
 
-  constexpr auto is_register(small_string token)
+  constexpr auto is_register(string token)
   {
     return token == tokens::eax ||
       token == tokens::ebx ||
@@ -630,20 +611,20 @@ namespace labels
       , ip{ 0u }
     {}
 
-    constexpr label_metadata(small_string name, size_t ip)
+    constexpr label_metadata(string name, size_t ip)
       : name{ name }
       , ip{ ip }
     {}
 
-    small_string name;
+    string name;
     size_t ip;
   };
 
   template <typename token_t>
-  constexpr small_string label_name_from_token(token_t token)
+  constexpr string label_name_from_token(token_t token)
   {
     auto it = algo::next(token.begin());
-    small_string name;
+    string name;
 
     //todo cleanup
     while(*it != '\0')
@@ -708,7 +689,7 @@ namespace labels
   template <typename tokens_t, typename labels_metadata_t, size_t result_tokens_size>
   constexpr auto substitute_labels(tokens_t tokens, labels_metadata_t labels)
   {
-    small_vector<small_string, result_tokens_size> result_tokens;
+    small_vector<string, result_tokens_size> result_tokens;
     
     auto end = tokens.end();
 
@@ -760,13 +741,13 @@ namespace assemble
 
         case instructions::instruction::je: // je pointer
         {
-            const auto ip = algo::next(token_it)->to_uint();
+            const auto ip = algo::stoui(*algo::next(token_it));
             opcodes.push_back(ip);
         }break;
 
         case instructions::instruction::jmp: // jmp pointer
         {
-            const auto ip = algo::next(token_it)->to_uint();
+            const auto ip = algo::stoui(*algo::next(token_it));
             opcodes.push_back(ip);
         }break;
 
@@ -774,7 +755,7 @@ namespace assemble
         {
             const auto reg = regs::token_to_reg(*algo::next(token_it));
             const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
-            const auto val = algo::next(token_it, 6)->to_uint();
+            const auto val = algo::stoui(*algo::next(token_it, 6));
 
             opcodes.push_back(regs::to_size_t(reg));
             opcodes.push_back(regs::to_size_t(reg2));
@@ -784,7 +765,7 @@ namespace assemble
         case instructions::instruction::sub_reg_val: // sub reg , val
         {
             const auto reg = regs::token_to_reg(*algo::next(token_it));
-            const auto val = algo::next(token_it, 3)->to_uint();
+            const auto val = algo::stoui(*algo::next(token_it, 3));
 
             opcodes.push_back(regs::to_size_t(reg));
             opcodes.push_back(val);
@@ -799,7 +780,7 @@ namespace assemble
         case instructions::instruction::cmp: // cmp reg , val
         {
             const auto reg = regs::token_to_reg(*algo::next(token_it));
-            const auto val = algo::next(token_it, 3)->to_uint();
+            const auto val = algo::stoui(*algo::next(token_it, 3));
 
             opcodes.push_back(regs::to_size_t(reg));
             opcodes.push_back(val);
@@ -808,7 +789,7 @@ namespace assemble
         case instructions::instruction::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
         {
             const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
-            const auto val = algo::next(token_it, 4)->to_uint();
+            const auto val = algo::stoui(*algo::next(token_it, 4));
             const auto reg2 = regs::token_to_reg(*algo::next(token_it, 7));
 
             opcodes.push_back(regs::to_size_t(reg));
@@ -819,8 +800,8 @@ namespace assemble
         case instructions::instruction::mov_mem_val_ptr_reg_plus_val: // mov [ reg + val ] , val2
         {
             const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
-            const auto val = algo::next(token_it, 4)->to_uint();
-            const auto val2 = algo::next(token_it, 7)->to_uint();
+            const auto val = algo::stoui(*algo::next(token_it, 4));
+            const auto val2 = algo::stoui(*algo::next(token_it, 7));
 
             opcodes.push_back(regs::to_size_t(reg));
             opcodes.push_back(val);
@@ -831,7 +812,7 @@ namespace assemble
         {
             const auto reg = regs::token_to_reg(*algo::next(token_it));
             const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
-            const auto val = algo::next(token_it, 6)->to_uint();
+            const auto val = algo::stoui(*algo::next(token_it, 6));
 
             opcodes.push_back(regs::to_size_t(reg));
             opcodes.push_back(regs::to_size_t(reg2));
@@ -850,7 +831,7 @@ namespace assemble
         case instructions::instruction::mov_reg_val: // mov reg , val
         {
             const auto reg = regs::token_to_reg(*algo::next(token_it));
-            const auto val = algo::next(token_it, 3)->to_uint();
+            const auto val = algo::stoui(*algo::next(token_it, 3));
 
             opcodes.push_back(regs::to_size_t(reg));
             opcodes.push_back(val);
@@ -875,7 +856,7 @@ namespace assemble
     {
       machine<AmountOfRAM> m;
 
-      auto opcodes_dest = m.ram.begin();
+      auto opcodes_dest = m.ram;
 
       auto token_it = tokens.begin();
       while(token_it != tokens.end())
@@ -1072,7 +1053,7 @@ constexpr auto asm_code =
     "jmp .loop "
 ":end "
     "mov eax , [ ebp + 4 ] "
-    "exit"_a;
+    "exit"_s;
 
 int main()
 {
@@ -1102,9 +1083,9 @@ namespace tests
 {
   namespace _a_tests
   {
-      constexpr auto arr = "arr"_a;
+      constexpr auto arr = "arr"_s;
 
-      static_assert(arr.size() == 4u);
+      static_assert(arr.size() == 3u);
       static_assert(arr[0] == 'a');
       static_assert(arr[1] == 'r');
       static_assert(arr[2] == 'r');
@@ -1118,10 +1099,10 @@ namespace tests
     constexpr auto twelve = algo::to_string(12u);
     constexpr auto big = algo::to_string(147129847u);
 
-    constexpr auto expected_zero = "0"_a;
-    constexpr auto expected_one = "1"_a;
-    constexpr auto expected_twelve = "1"_a;
-    constexpr auto expected_big = "147129847"_a;
+    constexpr auto expected_zero = "0"_s;
+    constexpr auto expected_one = "1"_s;
+    constexpr auto expected_twelve = "1"_s;
+    constexpr auto expected_big = "147129847"_s;
 
     static_assert(zero == expected_zero);
     static_assert(one == expected_one);
@@ -1129,15 +1110,15 @@ namespace tests
 
   namespace split
   {
-    constexpr auto text = "a b c"_a;
+    constexpr auto text = "a b c"_s;
     constexpr auto splt = splitter<3u>{};
 
     static_assert(splt.split(text).size() == 3);
 
     constexpr auto tokens = splt.split(text);
-    constexpr auto a = "a"_a;
-    constexpr auto b = "b"_a;
-    constexpr auto c = "c"_a;
+    constexpr auto a = "a"_s;
+    constexpr auto b = "b"_s;
+    constexpr auto c = "c"_s;
     static_assert(tokens[0] == a);
     static_assert(tokens[1] == b);
     static_assert(tokens[2] == c);
@@ -1149,7 +1130,7 @@ namespace tests
                           "mov eax , 1 "
                           ":middle "
                           "mov eax , 1 "
-                          ":end"_a;
+                          ":end"_s;
     constexpr auto tokens_count = algo::count(text.begin(), text.end(), ' ') + 1;
     constexpr splitter<tokens_count> ams_tokenizer;
     constexpr auto tokens = ams_tokenizer.split(text);
@@ -1157,14 +1138,14 @@ namespace tests
 
     static_assert(extracted_labels.size() == 3);
     
-    constexpr auto begin_label = "begin"_a;
-    constexpr auto middle_label = "middle"_a;
-    constexpr auto end_label = "end"_a;
+    constexpr auto begin_label = "begin"_s;
+    constexpr auto middle_label = "middle"_s;
+    constexpr auto end_label = "end"_s;
 
     static_assert(extracted_labels[0].name == begin_label);
     static_assert(extracted_labels[1].name == middle_label);
     static_assert(extracted_labels[2].name == end_label);
-
+ 
     constexpr auto begin_label_ip = 0u;
     constexpr auto middle_label_ip = instructions::get_ip_change(instructions::instruction::mov_reg_val);
     constexpr auto end_label_ip =middle_label_ip + instructions::get_ip_change(instructions::instruction::mov_reg_val);
@@ -1172,9 +1153,9 @@ namespace tests
     static_assert(extracted_labels[1].ip == middle_label_ip);
     static_assert(extracted_labels[2].ip == end_label_ip);
     
-    constexpr auto begin_label_token = ".begin"_a;
-    constexpr auto middle_label_token = ".middle"_a;
-    constexpr auto end_label_token = ".end"_a;
+    constexpr auto begin_label_token = ".begin"_s;
+    constexpr auto middle_label_token = ".middle"_s;
+    constexpr auto end_label_token = ".end"_s;
 
     static_assert(get_label_ip(extracted_labels, begin_label_token) == 0u);
     static_assert(get_label_ip(extracted_labels, middle_label_token) == 3u);
@@ -1190,16 +1171,16 @@ namespace tests
                           "je .middle "
                           "mov eax , 1 "
                           ":end "
-                          "je .end"_a;
+                          "je .end"_s;
     constexpr auto tokens_count = algo::count(text.begin(), text.end(), ' ') + 1;
     constexpr splitter<tokens_count> ams_tokenizer;
     constexpr auto tokens = ams_tokenizer.split(text);
     constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
     constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels), tokens_count>(tokens, extracted_labels);
 
-    constexpr auto begin_label_ip_str = "0"_a;
-    constexpr auto middle_label_ip_str = "5"_a;
-    constexpr auto end_label_ip_str = "10"_a;
+    constexpr auto begin_label_ip_str = "0"_s;
+    constexpr auto middle_label_ip_str = "5"_s;
+    constexpr auto end_label_ip_str = "10"_s;
 
     static_assert(substitued_labels[1] == begin_label_ip_str);
     static_assert(substitued_labels[7] == middle_label_ip_str);
