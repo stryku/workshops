@@ -11,8 +11,8 @@ namespace traits
 
 namespace algo
 {
-  template <typename It, typename OutIt>
-  constexpr void copy(It first, It last, OutIt d_first)
+  template <typename it_t, typename dit_t>
+  constexpr void copy(it_t first, it_t last, dit_t d_first)
   {
     while (first != last) 
     {
@@ -20,8 +20,8 @@ namespace algo
     }
   }
 
-  template <typename It, typename Value>
-  constexpr void fill(It first, It last, Value value)
+  template <typename it_t, typename value_t>
+  constexpr void fill(it_t first,it_t last, value_t value)
   {
     while (first != last) 
     {
@@ -29,8 +29,8 @@ namespace algo
     }
   }
 
-  template <typename It, typename Value>
-  constexpr size_t count(It first, It last, Value value)
+  template <typename it_t, typename value_t>
+  constexpr size_t count(it_t first, it_t last, value_t value)
   {
     size_t ret{ 0u };
     while (first != last) 
@@ -40,8 +40,8 @@ namespace algo
     return ret;
   }
 
-  template <typename It, typename It2>
-  constexpr bool equal(It first, It last, It2 first2)
+  template <typename it_t, typename it2_t>
+  constexpr bool equal(it_t first, it_t last, it2_t first2)
   {
     while(first != last)
     {
@@ -54,16 +54,16 @@ namespace algo
     return true;
   }
 
-  template <typename it>
-  constexpr void iter_swap(it lhs, it rhs)
+  template <typename it_t>
+  constexpr void iter_swap(it_t lhs, it_t rhs)
   {
     const auto tmp = *rhs;
     *rhs = *lhs;
     *lhs = tmp;
   }
 
-  template <typename it>
-  constexpr void reverse(it first, it last)
+  template <typename it_t>
+  constexpr void reverse(it_t first, it_t last)
   {
     while ((first != last) && (first != --last)) 
     {
@@ -71,20 +71,20 @@ namespace algo
     }
   }
 
-  template <typename it>
-  constexpr it next(it iterator, size_t n = 1)
+  template <typename it_t>
+  constexpr it_t next(it_t iterator, size_t n = 1)
   {
     return iterator + n;
   }
 
-  template <typename it>
-  constexpr it prev(it iterator, size_t n = 1)
+  template <typename it_t>
+  constexpr it_t prev(it_t iterator, size_t n = 1)
   {
     return iterator - n;
   }
 
-  template <typename it>
-  constexpr void advance(it &iterator, size_t n = 1)
+  template <typename it_t>
+  constexpr void advance(it_t &iterator, size_t n = 1)
   {
     iterator += n;
   }
@@ -188,22 +188,22 @@ private:
   size_t m_size;
 };
 
-template <size_t n>
-class small_string : public vector<char, n>
+template <size_t N>
+class fixed_string : public vector<char, N>
 {
 private:
-  using base = vector<char, n>;
+  using base = vector<char, N>;
 
 public:
-  constexpr small_string()
+  constexpr fixed_string()
   {
     algo::fill(base::begin(), base::reserved_end(), '\0');
   }
 
   template <typename... ts>
-  constexpr small_string(ts... chars)
+  constexpr fixed_string(ts... chars)
   {
-    static_assert(traits::all<std::is_same<ts, char>...>, "small_string accepts only chars");
+    static_assert(traits::all<std::is_same<ts, char>...>, "wrong types");
 
     const auto list = { chars... };
     for(const auto c : list)
@@ -215,32 +215,32 @@ public:
 
 
 template <typename... ts>
-small_string(ts... args) -> small_string<sizeof...(ts) + 1>;
+fixed_string(ts... args) -> fixed_string<sizeof...(ts) + 1>;
 
-using string = small_string<10u>;
+using string = fixed_string<10u>;
 
 template <typename T, T... chars>
 constexpr auto operator"" _s()
 {
-  return small_string{ chars... };
+  return fixed_string{ chars... };
 }
 
 namespace algo
 {
-  constexpr string to_string(size_t number)
+  constexpr string to_string(size_t val)
   {
     string result;
 
-    if(number == 0u)
+    if(val == 0u)
     {
       result.push_back('0');
       return result;
     }
 
-    while(number > 0)
+    while(val > 0)
     {
-      result.push_back(static_cast<char>(number % 10 + '0'));
-      number /= 10;
+      result.push_back(static_cast<char>(val % 10 + '0'));
+      val /= 10;
     }
 
     algo::reverse(result.begin(), result.end());
@@ -288,13 +288,13 @@ namespace tokens
 }
 
 template <size_t tokens_count>
-class splitter
+class tokenizer
 {
 public:
   using tokens_array_t = vector<string, tokens_count>;
 
   template <typename string_t>
-  constexpr auto split(string_t str) const
+  constexpr auto tokenize(string_t str) const
   {
     tokens_array_t tokens;
     auto iter = str.begin();
@@ -391,9 +391,9 @@ namespace instructions
     instruction_count
   };
 
-  constexpr size_t get_ip_change(instruction ints)
+  constexpr size_t get_ip_change(instruction inst)
   {
-    switch(ints)
+    switch(inst)
     {
       case je: return 2u;                           // je ip
       case jmp: return 2u;                          // jmp ip
@@ -412,9 +412,9 @@ namespace instructions
     }
   }
 
-  constexpr size_t get_token_count(instruction ints)
+  constexpr size_t get_token_count(instruction inst)
   {
-    switch(ints)
+    switch(inst)
     {
       case je: return 2u;                           // je ip
       case jmp: return 2u;                          // jmp ip
@@ -461,8 +461,8 @@ namespace instructions
       token == tokens::esp;
   }
 
-  template <typename tokens_it>
-  constexpr auto get_next_instruction(tokens_it token_it)
+  template <typename token_it_t>
+  constexpr auto get_next_instruction(token_it_t token_it)
   {
     if(auto token = *token_it; token == tokens::je) return instruction::je;
     else if(token == tokens::jmp) return instruction::jmp;
@@ -1034,8 +1034,8 @@ constexpr auto asm_code =
 int main()
 {
   constexpr auto tokens_count = algo::count(asm_code.begin(), asm_code.end(), ' ') + 1;
-  constexpr splitter<tokens_count> ams_tokenizer;
-  constexpr auto tokens = ams_tokenizer.split(asm_code);
+  constexpr tokenizer<tokens_count> ams_tokenizer;
+  constexpr auto tokens = ams_tokenizer.tokenize(asm_code);
 
   constexpr auto labels_count = algo::count(asm_code.begin(), asm_code.end(), ':');
   constexpr auto labels_metadata = labels::extract_labels<labels_count, decltype(tokens)>(tokens);
@@ -1068,7 +1068,7 @@ namespace tests
       static_assert(str[3] == '\0');
   }
 
-  namespace small_string_tests
+  namespace fixed_string_tests
   {
     constexpr auto zero = algo::to_string(0u);
     constexpr auto one = algo::to_string(1u);
@@ -1084,14 +1084,14 @@ namespace tests
     static_assert(one == expected_one);
   }
 
-  namespace split
+  namespace tokenize
   {
     constexpr auto text = "a b c"_s;
-    constexpr auto splt = splitter<3u>{};
+    constexpr auto splt = tokenizer<3u>{};
 
-    static_assert(splt.split(text).size() == 3);
+    static_assert(splt.tokenize(text).size() == 3);
 
-    constexpr auto tokens = splt.split(text);
+    constexpr auto tokens = splt.tokenize(text);
     constexpr auto a = "a"_s;
     constexpr auto b = "b"_s;
     constexpr auto c = "c"_s;
@@ -1108,8 +1108,8 @@ namespace tests
                           "mov eax , 1 "
                           ":end"_s;
     constexpr auto tokens_count = algo::count(text.begin(), text.end(), ' ') + 1;
-    constexpr splitter<tokens_count> ams_tokenizer;
-    constexpr auto tokens = ams_tokenizer.split(text);
+    constexpr tokenizer<tokens_count> ams_tokenizer;
+    constexpr auto tokens = ams_tokenizer.tokenize(text);
     constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
 
     static_assert(extracted_labels.size() == 3);
@@ -1149,8 +1149,8 @@ namespace tests
                           ":end "
                           "je .end"_s;
     constexpr auto tokens_count = algo::count(text.begin(), text.end(), ' ') + 1;
-    constexpr splitter<tokens_count> ams_tokenizer;
-    constexpr auto tokens = ams_tokenizer.split(text);
+    constexpr tokenizer<tokens_count> ams_tokenizer;
+    constexpr auto tokens = ams_tokenizer.tokenize(text);
     constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
     constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels), tokens_count>(tokens, extracted_labels);
 
