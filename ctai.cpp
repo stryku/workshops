@@ -293,7 +293,6 @@ private:
   }
 };
 
-
 namespace tokens
 {
   constexpr auto exit = "exit"_s;
@@ -321,6 +320,8 @@ namespace tokens
 
 namespace regs
 {
+  using reg_t = uint32_t;
+
     enum class reg
     {
         eax,
@@ -355,8 +356,11 @@ namespace regs
 }
 
 template <size_t AmountOfRAM>
-struct machine
+class machine
 {
+public:
+  using reg_type = regs::reg_t;
+
   constexpr machine()
     : ram{}
   {
@@ -369,60 +373,54 @@ struct machine
   {}
 
   template <typename reg_t>
-  constexpr uint32_t get_reg(reg_t r)
+  constexpr reg_t get_reg(reg_t r)
   {
       return reg_ref(r);
   }
 
   template <typename reg_t>
-  constexpr void set_reg(reg_t r, uint32_t val)
+  constexpr void set_reg(reg_t r, reg_t val)
   {
       reg_ref(r) = val;
   }
 
   small_vector<size_t, AmountOfRAM> ram;
 
-  constexpr uint32_t& eax() { return reg_ref(regs::reg::eax); }
-  constexpr const uint32_t& eax() const { return reg_ref(regs::reg::eax); }
-  constexpr uint32_t& ebx() { return reg_ref(regs::reg::ebx); }
-  constexpr const uint32_t& ebx() const { return reg_ref(regs::reg::ebx); }
-  constexpr uint32_t& ecx() { return reg_ref(regs::reg::ecx); }
-  constexpr const uint32_t& ecx() const { return reg_ref(regs::reg::ecx); }
-  constexpr uint32_t& edx() { return reg_ref(regs::reg::edx); }
-  constexpr const uint32_t& edx() const { return reg_ref(regs::reg::edx); }
-  constexpr uint32_t& ebp() { return reg_ref(regs::reg::ebp); }
-  constexpr const uint32_t& ebp() const { return reg_ref(regs::reg::ebp); }
-  constexpr uint32_t& esp() { return reg_ref(regs::reg::esp); }
-  constexpr const uint32_t& esp() const { return reg_ref(regs::reg::esp); }
-  constexpr uint32_t& eip() { return reg_ref(regs::reg::eip); }
-  constexpr const uint32_t& eip() const { return reg_ref(regs::reg::eip); }
+  constexpr reg_type& eax() { return reg_ref(regs::reg::eax); }
+  constexpr const reg_type& eax() const { return reg_ref(regs::reg::eax); }
+  constexpr reg_type& ebx() { return reg_ref(regs::reg::ebx); }
+  constexpr const reg_type& ebx() const { return reg_ref(regs::reg::ebx); }
+  constexpr reg_type& ecx() { return reg_ref(regs::reg::ecx); }
+  constexpr const reg_type& ecx() const { return reg_ref(regs::reg::ecx); }
+  constexpr reg_type& edx() { return reg_ref(regs::reg::edx); }
+  constexpr const reg_type& edx() const { return reg_ref(regs::reg::edx); }
+  constexpr reg_type& ebp() { return reg_ref(regs::reg::ebp); }
+  constexpr const reg_type& ebp() const { return reg_ref(regs::reg::ebp); }
+  constexpr reg_type& esp() { return reg_ref(regs::reg::esp); }
+  constexpr const reg_type& esp() const { return reg_ref(regs::reg::esp); }
+  constexpr reg_type& eip() { return reg_ref(regs::reg::eip); }
+  constexpr const reg_type& eip() const { return reg_ref(regs::reg::eip); }
 
   bool zf{false};
 
 private:
   constexpr void init_regs()
   {
-    eax() = 0u;
-    ebx() = 0u;
-    ecx() = 0u;
-    edx() = 0u;
-    ebp() = 0u;
-    esp() = 0u;
-    eip() = 0u;
+    eax() = ebx() = ecx() = edx() = ebp() = esp() = eip() = 0u;
   }
 
   template <typename reg_t>
-  constexpr uint32_t& reg_ref(reg_t r)
+  constexpr reg_type& reg_ref(reg_t r)
   {
       return regs_vals[regs::to_size_t(r)];
   }
   template <typename reg_t>
-  constexpr const uint32_t& reg_ref(reg_t r) const
+  constexpr const reg_type& reg_ref(reg_t r) const
   {
       return regs_vals[regs::to_size_t(r)];
   }
 
-  small_vector<uint32_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
+  small_vector<reg_type, static_cast<size_t>(regs::reg::undef)> regs_vals{};
 };
 
 namespace instructions
@@ -451,18 +449,18 @@ namespace instructions
   {
     switch(ints)
     {
-      case je: return 2u;
-      case jmp: return 2u;
-      case cmp: return 3u;
-      case add_reg_mem_ptr_reg_plus_val: return 4u;
-      case sub_reg_val: return 3u;
-      case mov_mem_reg_ptr_reg_plus_val: return 4u;
-      case mov_mem_val_ptr_reg_plus_val: return 4u;
-      case mov_reg_mem_ptr_reg_plus_val: return 4u;
-      case mov_reg_reg: return 3u;
-      case mov_reg_val: return 3u;
-      case inc: return 2u;
-      case exit: return 1u;
+      case je: return 2u;                           // je ip
+      case jmp: return 2u;                          // jmp ip
+      case cmp: return 3u;                          // cmp reg val
+      case add_reg_mem_ptr_reg_plus_val: return 4u; // add reg reg2 val
+      case sub_reg_val: return 3u;                  // sub reg val
+      case mov_mem_reg_ptr_reg_plus_val: return 4u; // mov reg val reg2
+      case mov_mem_val_ptr_reg_plus_val: return 4u; // mov reg val val2
+      case mov_reg_mem_ptr_reg_plus_val: return 4u; // mov reg reg2 val
+      case mov_reg_reg: return 3u;                  // mov reg reg2
+      case mov_reg_val: return 3u;                  // mov reg val
+      case inc: return 2u;                          // inc reg
+      case exit: return 1u;                         // exit
 
       default: return 0u;
     }
@@ -472,18 +470,18 @@ namespace instructions
   {
     switch(ints)
     {
-      case je: return 2u;
-      case jmp: return 2u;
-      case cmp: return 4u;
-      case add_reg_mem_ptr_reg_plus_val: return 8u;
-      case sub_reg_val: return 4u;
-      case mov_mem_reg_ptr_reg_plus_val: return 8u;
-      case mov_mem_val_ptr_reg_plus_val: return 8u;
-      case mov_reg_mem_ptr_reg_plus_val: return 8u;
-      case mov_reg_reg: return 4u;
-      case mov_reg_val: return 4u;
-      case inc: return 2u;
-      case exit: return 1u;
+      case je: return 2u;                           // je ip
+      case jmp: return 2u;                          // jmp ip
+      case cmp: return 4u;                          // cmp reg , val
+      case add_reg_mem_ptr_reg_plus_val: return 8u; // add reg , [ reg2 + val ]
+      case sub_reg_val: return 4u;                  // sub reg , val
+      case mov_mem_reg_ptr_reg_plus_val: return 8u; // mov [ reg + val ] , reg2
+      case mov_mem_val_ptr_reg_plus_val: return 8u; // mov [ reg + val ] , val2
+      case mov_reg_mem_ptr_reg_plus_val: return 8u; // mov reg , [ reg2 + val ]
+      case mov_reg_reg: return 4u;                  // mov reg , reg2
+      case mov_reg_val: return 4u;                  // mov reg , val
+      case inc: return 2u;                          // inc reg
+      case exit: return 1u;                         // exit
 
       default: return 500u;
     }
@@ -1001,7 +999,7 @@ constexpr auto asm_code =
     "mov [ ebp + 1 ] , 1 "
     "mov ecx , 1 "
 ":loop "
-    "cmp ecx , 15 " //we want to get 15th fibonacci element
+    "cmp ecx , 6 " //we want to get 6th fibonacci element
     "je .end "
     "mov eax , [ ebp + 3 ] "
     "add eax , [ ebp + 2 ] "
