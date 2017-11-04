@@ -3,6 +3,12 @@
 #include <algorithm>
 #include <type_traits>
 
+namespace traits
+{
+  template <typename... types>
+  constexpr auto all = std::conjunction<types...>::value;
+}
+
 namespace algo
 {
   template <typename It, typename OutIt>
@@ -192,6 +198,8 @@ public:
   template <typename... ts>
   constexpr small_string(ts... chars)
   {
+    static_assert(traits::all<std::is_same<ts, char>...>, "small_string accepts only chars");
+
     const auto list = { chars... };
     for(const auto c : list)
     {
