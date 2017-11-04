@@ -105,13 +105,13 @@ namespace algo
 }
 
 template <typename T, size_t N>
-class small_vector
+class vector
 {
 public:
   using value_type = T;
   using iterator = T*;
 
-  constexpr small_vector()
+  constexpr vector()
     : m_arr{}
     , m_size{ 0u }
   {}
@@ -161,8 +161,13 @@ public:
     return m_arr[i];
   }
 
+  constexpr void resize_to_reserved()
+  {
+    m_size = N;
+  }
+
   template <size_t rhs_n>
-  constexpr bool operator==(const small_vector<T, rhs_n>& rhs) const
+  constexpr bool operator==(const vector<T, rhs_n>& rhs) const
   {
     return size() == rhs.size() &&
            algo::equal(begin(), end(), rhs.begin());
@@ -184,10 +189,10 @@ private:
 };
 
 template <size_t n>
-class small_string : public small_vector<char, n>
+class small_string : public vector<char, n>
 {
 private:
-  using base = small_vector<char, n>;
+  using base = vector<char, n>;
 
 public:
   constexpr small_string()
@@ -257,11 +262,36 @@ namespace algo
   }
 }
 
+namespace tokens
+{
+  constexpr auto exit = "exit"_s;
+  constexpr auto mov = "mov"_s;
+  constexpr auto sub = "sub"_s;
+  constexpr auto add = "add"_s;
+  constexpr auto cmp = "cmp"_s;
+  constexpr auto je = "je"_s;
+  constexpr auto jmp = "jmp"_s;
+  constexpr auto inc = "inc"_s;
+
+  constexpr auto comma = ","_s;
+  constexpr auto open_square_bracket = "["_s;
+  constexpr auto close_square_bracket = "]"_s;
+  constexpr auto plus = "+"_s;
+
+  constexpr auto eax = "eax"_s;
+  constexpr auto ebx = "ebx"_s;
+  constexpr auto ecx = "ecx"_s;
+  constexpr auto edx = "edx"_s;
+
+  constexpr auto esp = "esp"_s;
+  constexpr auto ebp = "ebp"_s;
+}
+
 template <size_t tokens_count>
 class splitter
 {
 public:
-  using tokens_array_t = small_vector<string, tokens_count>;
+  using tokens_array_t = vector<string, tokens_count>;
 
   template <typename string_t>
   constexpr auto split(string_t str) const
@@ -301,31 +331,6 @@ private:
   }
 };
 
-namespace tokens
-{
-  constexpr auto exit = "exit"_s;
-  constexpr auto mov = "mov"_s;
-  constexpr auto sub = "sub"_s;
-  constexpr auto add = "add"_s;
-  constexpr auto cmp = "cmp"_s;
-  constexpr auto je = "je"_s;
-  constexpr auto jmp = "jmp"_s;
-  constexpr auto inc = "inc"_s;
-
-  constexpr auto comma = ","_s;
-  constexpr auto open_square_bracket = "["_s;
-  constexpr auto close_square_bracket = "]"_s;
-  constexpr auto plus = "+"_s;
-
-  constexpr auto eax = "eax"_s;
-  constexpr auto ebx = "ebx"_s;
-  constexpr auto ecx = "ecx"_s;
-  constexpr auto edx = "edx"_s;
-
-  constexpr auto esp = "esp"_s;
-  constexpr auto ebp = "ebp"_s;
-}
-
 namespace regs
 {
   using reg_t = uint32_t;
@@ -363,73 +368,6 @@ namespace regs
     }
 }
 
-template <size_t AmountOfRAM>
-class machine
-{
-public:
-  using reg_type = regs::reg_t;
-
-  constexpr machine()
-    : ram{}
-  {
-    init_regs();
-  }
-
-  constexpr machine(const machine& rhs)
-    : ram{ rhs.ram }
-    , regs_vals{ rhs.regs_vals }
-  {}
-
-  template <typename reg_t>
-  constexpr reg_t get_reg(reg_t r)
-  {
-      return reg_ref(r);
-  }
-
-  template <typename reg_t>
-  constexpr void set_reg(reg_t r, reg_t val)
-  {
-      reg_ref(r) = val;
-  }
-
-  small_vector<size_t, AmountOfRAM> ram;
-
-  constexpr reg_type& eax() { return reg_ref(regs::reg::eax); }
-  constexpr const reg_type& eax() const { return reg_ref(regs::reg::eax); }
-  constexpr reg_type& ebx() { return reg_ref(regs::reg::ebx); }
-  constexpr const reg_type& ebx() const { return reg_ref(regs::reg::ebx); }
-  constexpr reg_type& ecx() { return reg_ref(regs::reg::ecx); }
-  constexpr const reg_type& ecx() const { return reg_ref(regs::reg::ecx); }
-  constexpr reg_type& edx() { return reg_ref(regs::reg::edx); }
-  constexpr const reg_type& edx() const { return reg_ref(regs::reg::edx); }
-  constexpr reg_type& ebp() { return reg_ref(regs::reg::ebp); }
-  constexpr const reg_type& ebp() const { return reg_ref(regs::reg::ebp); }
-  constexpr reg_type& esp() { return reg_ref(regs::reg::esp); }
-  constexpr const reg_type& esp() const { return reg_ref(regs::reg::esp); }
-  constexpr reg_type& eip() { return reg_ref(regs::reg::eip); }
-  constexpr const reg_type& eip() const { return reg_ref(regs::reg::eip); }
-
-  bool zf{false};
-
-private:
-  constexpr void init_regs()
-  {
-    eax() = ebx() = ecx() = edx() = ebp() = esp() = eip() = 0u;
-  }
-
-  template <typename reg_t>
-  constexpr reg_type& reg_ref(reg_t r)
-  {
-      return regs_vals[regs::to_size_t(r)];
-  }
-  template <typename reg_t>
-  constexpr const reg_type& reg_ref(reg_t r) const
-  {
-      return regs_vals[regs::to_size_t(r)];
-  }
-
-  small_vector<reg_type, static_cast<size_t>(regs::reg::undef)> regs_vals{};
-};
 
 namespace instructions
 {
@@ -608,7 +546,7 @@ namespace labels
   template <size_t labels_count, typename tokens_t>
   constexpr auto extract_labels(tokens_t tokens)
   {
-    small_vector<label_metadata, labels_count> labels;
+    vector<label_metadata, labels_count> labels;
     size_t ip{ 0u };
     auto tokens_cp = tokens;
     auto end = tokens_cp.end();
@@ -654,11 +592,10 @@ namespace labels
            : found->ip;
   }
 
-
   template <typename tokens_t, typename labels_metadata_t, size_t result_tokens_size>
   constexpr auto substitute_labels(tokens_t tokens, labels_metadata_t labels)
   {
-    small_vector<string, result_tokens_size> result_tokens;
+    vector<string, result_tokens_size> result_tokens;
     
     const auto end = tokens.end();
 
@@ -687,12 +624,83 @@ namespace labels
   }
 }
 
+template <size_t amount_of_ram>
+class machine
+{
+public:
+  using reg_type = regs::reg_t;
+
+  constexpr machine()
+    : ram{}
+  {
+    ram.resize_to_reserved();
+    regs_vals.resize_to_reserved();
+    init_regs();
+  }
+
+  constexpr machine(const machine& rhs)
+    : ram{ rhs.ram }
+    , regs_vals{ rhs.regs_vals }
+  {}
+
+  template <typename reg_t>
+  constexpr reg_t get_reg(reg_t r)
+  {
+      return reg_ref(r);
+  }
+
+  template <typename reg_t>
+  constexpr void set_reg(reg_t r, reg_t val)
+  {
+      reg_ref(r) = val;
+  }
+
+  vector<size_t, amount_of_ram> ram;
+
+  constexpr reg_type& eax() { return reg_ref(regs::reg::eax); }
+  constexpr const reg_type& eax() const { return reg_ref(regs::reg::eax); }
+  constexpr reg_type& ebx() { return reg_ref(regs::reg::ebx); }
+  constexpr const reg_type& ebx() const { return reg_ref(regs::reg::ebx); }
+  constexpr reg_type& ecx() { return reg_ref(regs::reg::ecx); }
+  constexpr const reg_type& ecx() const { return reg_ref(regs::reg::ecx); }
+  constexpr reg_type& edx() { return reg_ref(regs::reg::edx); }
+  constexpr const reg_type& edx() const { return reg_ref(regs::reg::edx); }
+  constexpr reg_type& ebp() { return reg_ref(regs::reg::ebp); }
+  constexpr const reg_type& ebp() const { return reg_ref(regs::reg::ebp); }
+  constexpr reg_type& esp() { return reg_ref(regs::reg::esp); }
+  constexpr const reg_type& esp() const { return reg_ref(regs::reg::esp); }
+  constexpr reg_type& eip() { return reg_ref(regs::reg::eip); }
+  constexpr const reg_type& eip() const { return reg_ref(regs::reg::eip); }
+
+  bool zf{false};
+
+private:
+  constexpr void init_regs()
+  {
+    eax() = ebx() = ecx() = edx() = ebp() = esp() = eip() = 0u;
+  }
+
+  template <typename reg_t>
+  constexpr reg_type& reg_ref(reg_t r)
+  {
+      return regs_vals[regs::to_size_t(r)];
+  }
+  template <typename reg_t>
+  constexpr const reg_type& reg_ref(reg_t r) const
+  {
+      return regs_vals[regs::to_size_t(r)];
+  }
+
+  vector<reg_type, static_cast<size_t>(regs::reg::undef)> regs_vals{};
+};
+
+
 namespace assemble
 {
   template <typename token_it_t>
   constexpr auto get_next_opcodes(token_it_t &token_it)
   {
-    using opcodes_t = small_vector<size_t, instructions::get_max_eip_change()>;
+    using opcodes_t = vector<size_t, instructions::get_max_eip_change()>;
 
     opcodes_t opcodes;
     algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
