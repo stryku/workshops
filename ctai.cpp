@@ -82,6 +82,20 @@ namespace algo
   {
     iterator += n;
   }
+
+  template <typename it_t, typename predicate_t>
+  constexpr auto find_if(it_t first, it_t last, predicate_t pred)
+  {
+    for(; first != last; ++first)
+    {
+      if(pred(*first))
+      {
+        return first;
+      }
+    }
+
+    return last;
+  }
 }
 
 template <typename T, size_t N>
@@ -622,17 +636,16 @@ namespace labels
   template <typename labels_t, typename token_t>
   constexpr size_t get_label_ip(labels_t labels, token_t label_token)
   {
-    auto label_name = label_name_from_token(label_token);
-
-    for(auto label_metadata : labels)
+    const auto pred = [label_name = label_name_from_token(label_token)](const auto& label_metadata)
     {
-      if(label_metadata.name == label_name)
-      {
-        return label_metadata.ip;
-      }
-    }
+      return label_name == label_metadata.name;
+    };
 
-    return static_cast<size_t>(label_name[0]);
+    const auto found = algo::find_if(labels.begin(), labels.end(), pred);
+
+    return found == labels.end()
+           ? static_cast<size_t>(-1)
+           : found->ip;
   }
 
 
