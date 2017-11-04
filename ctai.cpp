@@ -1057,15 +1057,15 @@ int main()
 
 namespace tests
 {
-  namespace _a_tests
+  namespace _s_tests
   {
-      constexpr auto arr = "arr"_s;
+      constexpr auto str = "arr"_s;
 
-      static_assert(arr.size() == 3u);
-      static_assert(arr[0] == 'a');
-      static_assert(arr[1] == 'r');
-      static_assert(arr[2] == 'r');
-      static_assert(arr[3] == '\0');
+      static_assert(str.size() == 3u);
+      static_assert(str[0] == 'a');
+      static_assert(str[1] == 'r');
+      static_assert(str[2] == 'r');
+      static_assert(str[3] == '\0');
   }
 
   namespace small_string_tests
