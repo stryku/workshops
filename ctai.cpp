@@ -543,39 +543,44 @@ namespace labels
     return name;
   }
 
-  template <size_t labels_count, typename tokens_t>
-  constexpr auto extract_labels(tokens_t tokens)
+  template <size_t labels_count>
+  class labels_extractor
   {
-    vector<label_metadata, labels_count> labels;
-    size_t ip{ 0u };
-    auto tokens_cp = tokens;
-    auto end = tokens_cp.end();
-
-    auto current_token_it = tokens_cp.begin();
-    while(current_token_it != end)
+  public:
+    template <typename tokens_t>
+    constexpr auto extract(tokens_t tokens) const
     {
-      if(current_token_it->front() == ':')
+      vector<label_metadata, labels_count> labels;
+      size_t ip{ 0u };
+      auto tokens_cp = tokens;
+      auto end = tokens_cp.end();
+
+      auto current_token_it = tokens_cp.begin();
+      while(current_token_it != end)
       {
-        auto name = label_name_from_token(*current_token_it);
+        if(current_token_it->front() == ':')
+        {
+          auto name = label_name_from_token(*current_token_it);
 
-        labels.push_back(label_metadata(name, ip));
+          labels.push_back(label_metadata(name, ip));
 
-        algo::advance(current_token_it);
+          algo::advance(current_token_it);
+        }
+        else
+        {
+          const auto instruction = instructions::get_next_instruction(current_token_it);
+
+          const auto token_count = instructions::get_token_count(instruction);
+          algo::advance(current_token_it, token_count);
+
+          const auto ip_change = instructions::get_ip_change(instruction);
+          ip += ip_change;
+        }
       }
-      else
-      {
-        const auto instruction = instructions::get_next_instruction(current_token_it);
 
-        const auto token_count = instructions::get_token_count(instruction);
-        algo::advance(current_token_it, token_count);
-
-        const auto ip_change = instructions::get_ip_change(instruction);
-        ip += ip_change;
-      }
+      return labels;
     }
-
-    return labels;
-  }
+  };
 
   template <typename labels_t, typename token_t>
   constexpr size_t get_label_ip(labels_t labels, token_t label_token)
@@ -1038,8 +1043,8 @@ int main()
   constexpr auto tokens = ams_tokenizer.tokenize(asm_code);
 
   constexpr auto labels_count = algo::count(asm_code.begin(), asm_code.end(), ':');
-  constexpr auto labels_metadata = labels::extract_labels<labels_count, decltype(tokens)>(tokens);
-  constexpr auto extracted_labels_metadata = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
+  constexpr labels::labels_extractor<labels_count> labels_extractor;
+  constexpr auto extracted_labels_metadata = labels_extractor.extract(tokens);
   constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels_metadata), tokens_count>(tokens, extracted_labels_metadata);
 
   constexpr assemble::assembler<1024> assembler;
@@ -1110,7 +1115,8 @@ namespace tests
     constexpr auto tokens_count = algo::count(text.begin(), text.end(), ' ') + 1;
     constexpr tokenizer<tokens_count> ams_tokenizer;
     constexpr auto tokens = ams_tokenizer.tokenize(text);
-    constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
+    constexpr labels::labels_extractor<tokens_count> extractor;
+    constexpr auto extracted_labels = extractor.extract(tokens);
 
     static_assert(extracted_labels.size() == 3);
     
@@ -1151,7 +1157,8 @@ namespace tests
     constexpr auto tokens_count = algo::count(text.begin(), text.end(), ' ') + 1;
     constexpr tokenizer<tokens_count> ams_tokenizer;
     constexpr auto tokens = ams_tokenizer.tokenize(text);
-    constexpr auto extracted_labels = labels::extract_labels<tokens_count, decltype(tokens)>(tokens);
+    constexpr labels::labels_extractor<tokens_count> extractor;
+    constexpr auto extracted_labels = extractor.extract(tokens);
     constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels), tokens_count>(tokens, extracted_labels);
 
     constexpr auto begin_label_ip_str = "0"_s;
