@@ -132,7 +132,7 @@ public:
   {
     return begin() + size();
   }
-  
+
   constexpr char front() const
   {
     return *begin();
@@ -588,36 +588,41 @@ namespace labels
            : found->ip;
   }
 
-  template <typename tokens_t, typename labels_metadata_t, size_t result_tokens_size>
-  constexpr auto substitute_labels(tokens_t tokens, labels_metadata_t labels)
+  template <size_t result_tokens_size>
+  class labels_replacer
   {
-    vector<string, result_tokens_size> result_tokens;
-    
-    const auto end = tokens.end();
-
-    auto current_token_it = tokens.begin();
-    while(current_token_it != end)
+  public:
+    template <typename tokens_t, typename labels_metadata_t>
+    constexpr auto replace(tokens_t tokens, labels_metadata_t labels) const
     {
-      if(current_token_it->front() == ':')
-      {
-        algo::advance(current_token_it);
-      }
-      else if(current_token_it->front() == '.')
-      {
-        const auto ip = get_label_ip(labels, *current_token_it);
-        auto str_ip = algo::to_string(ip);
-        result_tokens.push_back(str_ip);
+      vector<string, result_tokens_size> result_tokens;
+    
+      const auto end = tokens.end();
 
-        algo::advance(current_token_it);
-      }
-      else
+      auto current_token_it = tokens.begin();
+      while(current_token_it != end)
       {
-        result_tokens.push_back(*current_token_it++);
+        if(current_token_it->front() == ':') //:abel declaration. Omit it
+        {
+          algo::advance(current_token_it);
+        }
+        else if(current_token_it->front() == '.') //Label reference. Replace it with instruction pointer
+        {
+          const auto ip = get_label_ip(labels, *current_token_it);
+          auto str_ip = algo::to_string(ip);
+          result_tokens.push_back(str_ip);
+
+          algo::advance(current_token_it);
+        }
+        else //Regular token
+        {
+          result_tokens.push_back(*current_token_it++);
+        }
       }
+
+      return result_tokens;
     }
-
-    return result_tokens;
-  }
+  };
 }
 
 template <size_t amount_of_ram>
@@ -1036,10 +1041,12 @@ int main()
   constexpr auto labels_count = algo::count(asm_code.begin(), asm_code.end(), ':');
   constexpr labels::labels_extractor<labels_count> labels_extractor;
   constexpr auto extracted_labels_metadata = labels_extractor.extract(tokens);
-  constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels_metadata), tokens_count>(tokens, extracted_labels_metadata);
+  constexpr labels::labels_replacer<tokens_count> labels_replacer;
+  constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels_metadata);
+  //constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels_metadata), tokens_count>(tokens, extracted_labels_metadata);
 
   constexpr assemble::assembler<1024> assembler;
-  constexpr auto m = assembler.assemble_tokens(substitued_labels);
+  constexpr auto m = assembler.assemble_tokens(tokens_replaced_labels);
 
   constexpr auto result = execute::execute(m);
 
@@ -1150,15 +1157,16 @@ namespace tests
     constexpr auto tokens = ams_tokenizer.tokenize(text);
     constexpr labels::labels_extractor<tokens_count> extractor;
     constexpr auto extracted_labels = extractor.extract(tokens);
-    constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels), tokens_count>(tokens, extracted_labels);
+    constexpr labels::labels_replacer<tokens_count> labels_replacer;
+    constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels);
 
     constexpr auto begin_label_ip_str = "0"_s;
     constexpr auto middle_label_ip_str = "5"_s;
     constexpr auto end_label_ip_str = "10"_s;
 
-    static_assert(substitued_labels[1] == begin_label_ip_str);
-    static_assert(substitued_labels[7] == middle_label_ip_str);
-    static_assert(substitued_labels[13] == end_label_ip_str);
+    static_assert(tokens_replaced_labels[1] == begin_label_ip_str);
+    static_assert(tokens_replaced_labels[7] == middle_label_ip_str);
+    static_assert(tokens_replaced_labels[13] == end_label_ip_str);
   }
 }
 
