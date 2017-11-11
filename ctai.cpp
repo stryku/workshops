@@ -104,21 +104,13 @@ namespace algo
   }
 }
 
-template <typename T, size_t N>
+template <typename ty, size_t N>
 class vector
 {
 public:
-  using value_type = T;
-  using iterator = T*;
-
-  constexpr vector()
-    : m_arr{}
-    , m_size{ 0u }
-  {}
-
-  constexpr char front() const
+  constexpr size_t size() const
   {
-    return *begin();
+    return m_size;
   }
 
   constexpr auto begin()
@@ -133,44 +125,44 @@ public:
 
   constexpr auto end()
   {
-    return begin() + m_size;
+    return begin() + size();
   }
 
   constexpr const auto end() const
   {
-    return begin() + m_size;
+    return begin() + size();
+  }
+  
+  constexpr char front() const
+  {
+    return *begin();
   }
 
-  constexpr void push_back(T val)
+  constexpr void push_back(ty val)
   {
     m_arr[m_size++] = val;
   }
 
-  constexpr size_t size() const
-  {
-    return m_size;
-  }
-
-  constexpr T& operator[](size_t i)
+  constexpr ty& operator[](size_t i)
   {
     return m_arr[i];
   }
 
-  constexpr const T& operator[](size_t i) const
+  constexpr const ty& operator[](size_t i) const
   {
     return m_arr[i];
+  }
+
+  template <size_t rhs_n>
+  constexpr bool operator==(const vector<ty, rhs_n>& rhs) const
+  {
+    return size() == rhs.size() &&
+           algo::equal(begin(), end(), rhs.begin());
   }
 
   constexpr void resize_to_reserved()
   {
     m_size = N;
-  }
-
-  template <size_t rhs_n>
-  constexpr bool operator==(const vector<T, rhs_n>& rhs) const
-  {
-    return size() == rhs.size() &&
-           algo::equal(begin(), end(), rhs.begin());
   }
 
 protected:
@@ -184,8 +176,8 @@ protected:
   }
 
 private:
-  T m_arr[N];
-  size_t m_size;
+  ty m_arr[N]{};
+  size_t m_size{ 0u };
 };
 
 template <size_t N>
