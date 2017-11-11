@@ -327,37 +327,37 @@ namespace regs
 {
   using reg_t = uint32_t;
 
-    enum class reg
-    {
-        eax,
-        ebx,
-        ecx,
-        edx,
-        ebp,
-        esp,
-        eip,
+  enum class reg
+  {
+      eax,
+      ebx,
+      ecx,
+      edx,
+      ebp,
+      esp,
+      eip,
 
-        undef
-    };
+      undef
+  };
 
-    template <typename reg_t>
-    constexpr auto to_size_t(reg_t r)
-    {
-        return static_cast<size_t>(r);
-    }
+  template <typename reg_t>
+  constexpr auto to_size_t(reg_t r)
+  {
+      return static_cast<size_t>(r);
+  }
 
-    template <typename token_t>
-    constexpr reg token_to_reg(token_t token)
-    {
-        if(token == tokens::eax) return reg::eax;
-        if(token == tokens::ebx) return reg::ebx;
-        if(token == tokens::ecx) return reg::ecx;
-        if(token == tokens::edx) return reg::edx;
-        if(token == tokens::ebp) return reg::ebp;
-        if(token == tokens::esp) return reg::esp;
+  template <typename token_t>
+  constexpr reg token_to_reg(token_t token)
+  {
+      if(token == tokens::eax) return reg::eax;
+      if(token == tokens::ebx) return reg::ebx;
+      if(token == tokens::ecx) return reg::ecx;
+      if(token == tokens::edx) return reg::edx;
+      if(token == tokens::ebp) return reg::ebp;
+      if(token == tokens::esp) return reg::esp;
 
-        return reg::undef;
-    }
+      return reg::undef;
+  }
 }
 
 namespace instructions
@@ -632,7 +632,6 @@ public:
   using reg_type = regs::reg_t;
 
   constexpr machine()
-    : ram{}
   {
     ram.resize_to_reserved();
     regs_vals.resize_to_reserved();
@@ -656,8 +655,6 @@ public:
       reg_ref(r) = val;
   }
 
-  vector<size_t, amount_of_ram> ram;
-
   constexpr reg_type& eax() { return reg_ref(regs::reg::eax); }
   constexpr const reg_type& eax() const { return reg_ref(regs::reg::eax); }
   constexpr reg_type& ebx() { return reg_ref(regs::reg::ebx); }
@@ -673,6 +670,7 @@ public:
   constexpr reg_type& eip() { return reg_ref(regs::reg::eip); }
   constexpr const reg_type& eip() const { return reg_ref(regs::reg::eip); }
 
+  vector<size_t, amount_of_ram> ram;
   bool zf{false};
 
 private:
@@ -686,6 +684,7 @@ private:
   {
       return regs_vals[regs::to_size_t(r)];
   }
+
   template <typename reg_t>
   constexpr const reg_type& reg_ref(reg_t r) const
   {
@@ -838,7 +837,7 @@ namespace assemble
       auto token_it = tokens.begin();
       while(token_it != tokens.end())
       {
-        auto opcodes = get_next_opcodes(token_it);
+        const auto opcodes = get_next_opcodes(token_it);
         algo::copy(opcodes.begin(), opcodes.end(), opcodes_dest);
         algo::advance(opcodes_dest, opcodes.size());
       }
