@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <type_traits>
 
+//unit used in machine for memory cells, registers etc.
+using unit_t = uint64_t;
+
 namespace traits
 {
   template <typename... types>
@@ -325,7 +328,7 @@ private:
 
 namespace regs
 {
-  using reg_t = uint32_t;
+  using reg_t = unit_t;
 
   enum class reg
   {
@@ -525,7 +528,6 @@ namespace labels
     auto it = algo::next(token.begin());
     string name;
 
-    //todo cleanup
     while(*it != '\0')
     {
       name.push_back(*it++);
@@ -602,7 +604,7 @@ namespace labels
       auto current_token_it = tokens.begin();
       while(current_token_it != end)
       {
-        if(current_token_it->front() == ':') //:abel declaration. Omit it
+        if(current_token_it->front() == ':') //Label declaration. Omit it
         {
           algo::advance(current_token_it);
         }
@@ -629,7 +631,7 @@ template <size_t amount_of_ram>
 class machine
 {
 public:
-  using reg_type = regs::reg_t;
+  using reg_type = unit_t;
 
   constexpr machine()
   {
@@ -1042,7 +1044,6 @@ int main()
   constexpr auto extracted_labels_metadata = labels_extractor.extract(tokens);
   constexpr labels::labels_replacer<tokens_count> labels_replacer;
   constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels_metadata);
-  //constexpr auto substitued_labels = labels::substitute_labels<decltype(tokens), decltype(extracted_labels_metadata), tokens_count>(tokens, extracted_labels_metadata);
 
   constexpr assemble::assembler<1024> assembler;
   constexpr auto m = assembler.assemble_tokens(tokens_replaced_labels);
