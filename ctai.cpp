@@ -830,7 +830,7 @@ namespace assemble
   {
   public:
     template <typename tokens_t>
-    constexpr auto assemble_tokens(tokens_t tokens) const
+    constexpr auto assemble(tokens_t tokens) const
     {
       machine<AmountOfRAM> m;
 
@@ -1046,7 +1046,7 @@ int main()
   constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels_metadata);
 
   constexpr assemble::assembler<1024> assembler;
-  constexpr auto m = assembler.assemble_tokens(tokens_replaced_labels);
+  constexpr auto m = assembler.assemble(tokens_replaced_labels);
 
   constexpr auto result = execute::execute(m);
 
