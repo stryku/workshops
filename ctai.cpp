@@ -72,19 +72,19 @@ namespace algo
   }
 
   template <typename it_t>
-  constexpr it_t next(it_t iterator, size_t n = 1)
+  constexpr it_t next(it_t iterator, int n = 1)
   {
     return iterator + n;
   }
 
   template <typename it_t>
-  constexpr it_t prev(it_t iterator, size_t n = 1)
+  constexpr it_t prev(it_t iterator, int n = 1)
   {
-    return iterator - n;
+    return next(iterator, -n);
   }
 
   template <typename it_t>
-  constexpr void advance(it_t &iterator, size_t n = 1)
+  constexpr void advance(it_t &iterator, int n = 1)
   {
     iterator += n;
   }
