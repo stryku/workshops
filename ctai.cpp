@@ -6,7 +6,7 @@
 namespace traits
 {
   template <typename... types>
-  constexpr auto all = std::conjunction<types...>::value;
+  constexpr auto all_true = std::conjunction<types...>::value;
 }
 
 namespace algo
@@ -203,7 +203,7 @@ public:
   template <typename... ts>
   constexpr fixed_string(ts... chars)
   {
-    static_assert(traits::all<std::is_same<ts, char>...>, "wrong types");
+    static_assert(traits::all_true<std::is_same<ts, char>...>);
 
     const auto list = { chars... };
     for(const auto c : list)
