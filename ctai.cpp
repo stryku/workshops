@@ -344,9 +344,9 @@ namespace regs
   };
 
   template <typename reg_t>
-  constexpr auto to_size_t(reg_t r)
+  constexpr auto to_unit_t(reg_t r)
   {
-      return static_cast<size_t>(r);
+      return static_cast<unit_t>(r);
   }
 
   template <typename token_t>
@@ -684,13 +684,13 @@ private:
   template <typename register_t>
   constexpr reg_t& reg_ref(register_t r)
   {
-      return regs_vals[regs::to_size_t(r)];
+      return regs_vals[regs::to_unit_t(r)];
   }
 
   template <typename register_t>
   constexpr const reg_t& reg_ref(register_t r) const
   {
-      return regs_vals[regs::to_size_t(r)];
+      return regs_vals[regs::to_unit_t(r)];
   }
 
   vector<reg_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
@@ -702,7 +702,7 @@ namespace assemble
   template <typename token_it_t>
   constexpr auto get_next_opcodes(token_it_t &token_it)
   {
-    using opcodes_t = vector<size_t, instructions::get_max_eip_change()>;
+    using opcodes_t = vector<unit_t, instructions::get_max_eip_change()>;
 
     opcodes_t opcodes;
     algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
@@ -735,8 +735,8 @@ namespace assemble
             const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
             const auto val = algo::stoui(*algo::next(token_it, 6));
 
-            opcodes.push_back(regs::to_size_t(reg));
-            opcodes.push_back(regs::to_size_t(reg2));
+            opcodes.push_back(regs::to_unit_t(reg));
+            opcodes.push_back(regs::to_unit_t(reg2));
             opcodes.push_back(val);
         }break;
 
@@ -745,14 +745,14 @@ namespace assemble
             const auto reg = regs::token_to_reg(*algo::next(token_it));
             const auto val = algo::stoui(*algo::next(token_it, 3));
 
-            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(regs::to_unit_t(reg));
             opcodes.push_back(val);
         }break;
 
         case instructions::instruction::inc: // inc reg
         {
             const auto reg = regs::token_to_reg(*algo::next(token_it));
-            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(regs::to_unit_t(reg));
         }break;
 
         case instructions::instruction::cmp: // cmp reg , val
@@ -760,7 +760,7 @@ namespace assemble
             const auto reg = regs::token_to_reg(*algo::next(token_it));
             const auto val = algo::stoui(*algo::next(token_it, 3));
 
-            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(regs::to_unit_t(reg));
             opcodes.push_back(val);
         }break;
 
@@ -770,9 +770,9 @@ namespace assemble
             const auto val = algo::stoui(*algo::next(token_it, 4));
             const auto reg2 = regs::token_to_reg(*algo::next(token_it, 7));
 
-            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(regs::to_unit_t(reg));
             opcodes.push_back(val);
-            opcodes.push_back(regs::to_size_t(reg2));
+            opcodes.push_back(regs::to_unit_t(reg2));
         }break;
 
         case instructions::instruction::mov_mem_val_ptr_reg_plus_val: // mov [ reg + val ] , val2
@@ -781,7 +781,7 @@ namespace assemble
             const auto val = algo::stoui(*algo::next(token_it, 4));
             const auto val2 = algo::stoui(*algo::next(token_it, 7));
 
-            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(regs::to_unit_t(reg));
             opcodes.push_back(val);
             opcodes.push_back(val2);
         }break;
@@ -792,8 +792,8 @@ namespace assemble
             const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
             const auto val = algo::stoui(*algo::next(token_it, 6));
 
-            opcodes.push_back(regs::to_size_t(reg));
-            opcodes.push_back(regs::to_size_t(reg2));
+            opcodes.push_back(regs::to_unit_t(reg));
+            opcodes.push_back(regs::to_unit_t(reg2));
             opcodes.push_back(val);
         }break;
 
@@ -802,8 +802,8 @@ namespace assemble
             const auto reg = regs::token_to_reg(*algo::next(token_it));
             const auto reg2 = regs::token_to_reg(*algo::next(token_it, 3));
 
-            opcodes.push_back(regs::to_size_t(reg));
-            opcodes.push_back(regs::to_size_t(reg2));
+            opcodes.push_back(regs::to_unit_t(reg));
+            opcodes.push_back(regs::to_unit_t(reg2));
         }break;
 
         case instructions::instruction::mov_reg_val: // mov reg , val
@@ -811,7 +811,7 @@ namespace assemble
             const auto reg = regs::token_to_reg(*algo::next(token_it));
             const auto val = algo::stoui(*algo::next(token_it, 3));
 
-            opcodes.push_back(regs::to_size_t(reg));
+            opcodes.push_back(regs::to_unit_t(reg));
             opcodes.push_back(val);
         }break;
 
@@ -825,14 +825,14 @@ namespace assemble
     return opcodes;
   }
 
-  template <size_t AmountOfRAM>
+  template <size_t amount_of_ram>
   class assembler
   {
   public:
     template <typename tokens_t>
     constexpr auto assemble(tokens_t tokens) const
     {
-      machine<AmountOfRAM> m;
+      machine<amount_of_ram> m;
 
       auto opcodes_dest = m.ram.begin();
 
@@ -844,7 +844,7 @@ namespace assemble
         algo::advance(opcodes_dest, opcodes.size());
       }
       
-      m.esp() = AmountOfRAM - 1;
+      m.esp() = amount_of_ram - 1;
       m.eip() = 0;
 
       return m;
