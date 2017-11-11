@@ -368,25 +368,24 @@ namespace regs
     }
 }
 
-
 namespace instructions
 {
   enum instruction
   {
     none,
 
-    je,
-    jmp,
-    cmp,
-    add_reg_mem_ptr_reg_plus_val,
-    sub_reg_val,
-    mov_mem_reg_ptr_reg_plus_val,
-    mov_mem_val_ptr_reg_plus_val,
-    mov_reg_mem_ptr_reg_plus_val,
-    mov_reg_reg,
-    mov_reg_val,
-    inc,
-    exit,
+    je,                           // je ip
+    jmp,                          // jmp ip
+    cmp,                          // cmp reg , val
+    add_reg_mem_ptr_reg_plus_val, // add reg , [ reg2 + val ]
+    sub_reg_val,                  // sub reg , val
+    mov_mem_reg_ptr_reg_plus_val, // mov [ reg + val ] , reg2
+    mov_mem_val_ptr_reg_plus_val, // mov [ reg + val ] , val2
+    mov_reg_mem_ptr_reg_plus_val, // mov reg , [ reg2 + val ]
+    mov_reg_reg,                  // mov reg , reg2
+    mov_reg_val,                  // mov reg , val
+    inc,                          // inc reg
+    exit,                         // exit
 
     instruction_count
   };
