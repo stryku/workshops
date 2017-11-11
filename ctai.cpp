@@ -631,7 +631,7 @@ template <size_t amount_of_ram>
 class machine
 {
 public:
-  using reg_type = unit_t;
+  using reg_t = unit_t;
 
   constexpr machine()
   {
@@ -657,22 +657,22 @@ public:
       reg_ref(r) = val;
   }
 
-  constexpr reg_type& eax() { return reg_ref(regs::reg::eax); }
-  constexpr const reg_type& eax() const { return reg_ref(regs::reg::eax); }
-  constexpr reg_type& ebx() { return reg_ref(regs::reg::ebx); }
-  constexpr const reg_type& ebx() const { return reg_ref(regs::reg::ebx); }
-  constexpr reg_type& ecx() { return reg_ref(regs::reg::ecx); }
-  constexpr const reg_type& ecx() const { return reg_ref(regs::reg::ecx); }
-  constexpr reg_type& edx() { return reg_ref(regs::reg::edx); }
-  constexpr const reg_type& edx() const { return reg_ref(regs::reg::edx); }
-  constexpr reg_type& ebp() { return reg_ref(regs::reg::ebp); }
-  constexpr const reg_type& ebp() const { return reg_ref(regs::reg::ebp); }
-  constexpr reg_type& esp() { return reg_ref(regs::reg::esp); }
-  constexpr const reg_type& esp() const { return reg_ref(regs::reg::esp); }
-  constexpr reg_type& eip() { return reg_ref(regs::reg::eip); }
-  constexpr const reg_type& eip() const { return reg_ref(regs::reg::eip); }
+  constexpr reg_t& eax() { return reg_ref(regs::reg::eax); }
+  constexpr const reg_t& eax() const { return reg_ref(regs::reg::eax); }
+  constexpr reg_t& ebx() { return reg_ref(regs::reg::ebx); }
+  constexpr const reg_t& ebx() const { return reg_ref(regs::reg::ebx); }
+  constexpr reg_t& ecx() { return reg_ref(regs::reg::ecx); }
+  constexpr const reg_t& ecx() const { return reg_ref(regs::reg::ecx); }
+  constexpr reg_t& edx() { return reg_ref(regs::reg::edx); }
+  constexpr const reg_t& edx() const { return reg_ref(regs::reg::edx); }
+  constexpr reg_t& ebp() { return reg_ref(regs::reg::ebp); }
+  constexpr const reg_t& ebp() const { return reg_ref(regs::reg::ebp); }
+  constexpr reg_t& esp() { return reg_ref(regs::reg::esp); }
+  constexpr const reg_t& esp() const { return reg_ref(regs::reg::esp); }
+  constexpr reg_t& eip() { return reg_ref(regs::reg::eip); }
+  constexpr const reg_t& eip() const { return reg_ref(regs::reg::eip); }
 
-  vector<size_t, amount_of_ram> ram;
+  vector<unit_t, amount_of_ram> ram;
   bool zf{false};
 
 private:
@@ -681,19 +681,19 @@ private:
     eax() = ebx() = ecx() = edx() = ebp() = esp() = eip() = 0u;
   }
 
-  template <typename reg_t>
-  constexpr reg_type& reg_ref(reg_t r)
+  template <typename register_t>
+  constexpr reg_t& reg_ref(register_t r)
   {
       return regs_vals[regs::to_size_t(r)];
   }
 
-  template <typename reg_t>
-  constexpr const reg_type& reg_ref(reg_t r) const
+  template <typename register_t>
+  constexpr const reg_t& reg_ref(register_t r) const
   {
       return regs_vals[regs::to_size_t(r)];
   }
 
-  vector<reg_type, static_cast<size_t>(regs::reg::undef)> regs_vals{};
+  vector<reg_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
 };
 
 
