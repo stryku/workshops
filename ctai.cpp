@@ -576,9 +576,9 @@ namespace labels
   };
 
   template <typename labels_t, typename token_t>
-  constexpr size_t get_label_ip(labels_t labels, token_t label_token)
+  constexpr size_t get_label_ip(token_t token, labels_t labels)
   {
-    const auto pred = [label_name = label_name_from_token(label_token)](const auto& label_metadata)
+    const auto pred = [label_name = label_name_from_token(token)](const auto& label_metadata)
     {
       return label_name == label_metadata.name;
     };
@@ -597,28 +597,28 @@ namespace labels
     template <typename tokens_t, typename labels_metadata_t>
     constexpr auto replace(tokens_t tokens, labels_metadata_t labels) const
     {
-      vector<string, result_tokens_size> result_tokens;
-    
-      const auto end = tokens.end();
+      using result_tokens_t = vector<string, result_tokens_size>;
 
-      auto current_token_it = tokens.begin();
-      while(current_token_it != end)
+      result_tokens_t result_tokens;
+
+      for(const auto& token : tokens)
       {
-        if(current_token_it->front() == ':') //Label declaration. Omit it
+        if(token.front() == ':') 
         {
-          algo::advance(current_token_it);
+          //Label declaration. Omit it
         }
-        else if(current_token_it->front() == '.') //Label reference. Replace it with instruction pointer
+        else if(token.front() == '.')
         {
-          const auto ip = get_label_ip(labels, *current_token_it);
-          auto str_ip = algo::to_string(ip);
-          result_tokens.push_back(str_ip);
+          //Label reference. Replace with instruciton pointer
 
-          algo::advance(current_token_it);
+          const auto label_ip = get_label_ip(token, labels);
+          const auto string_ip = algo::to_string(label_ip);
+
+          result_tokens.push_back(string_ip);
         }
-        else //Regular token
+        else
         {
-          result_tokens.push_back(*current_token_it++);
+          result_tokens.push_back(token);
         }
       }
 
@@ -1137,9 +1137,9 @@ namespace tests
     constexpr auto middle_label_token = ".middle"_s;
     constexpr auto end_label_token = ".end"_s;
 
-    static_assert(get_label_ip(extracted_labels, begin_label_token) == 0u);
-    static_assert(get_label_ip(extracted_labels, middle_label_token) == 3u);
-    static_assert(get_label_ip(extracted_labels, end_label_token) == 6u);
+    static_assert(get_label_ip(begin_label_token, extracted_labels) == 0u);
+    static_assert(get_label_ip(middle_label_token, extracted_labels) == 3u);
+    static_assert(get_label_ip(end_label_token, extracted_labels) == 6u);
   }
 
   namespace substitute_tests
