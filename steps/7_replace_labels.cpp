@@ -616,8 +616,92 @@ namespace labels
   };
 }
 
+template <size_t amount_of_ram>
+class machine
+{
+public:
+  using reg_t = unit_t;
+
+  constexpr machine()
+  {
+    ram.resize_to_reserved();
+    regs_vals.resize_to_reserved();
+    init_regs();
+  }
+
+  constexpr machine(const machine& rhs)
+    : ram{ rhs.ram }
+    , regs_vals{ rhs.regs_vals }
+  {}
+
+  template <typename reg_t>
+  constexpr reg_t get_reg(reg_t r)
+  {
+    return reg_ref(r);
+  }
+
+  template <typename reg_t>
+  constexpr void set_reg(reg_t r, reg_t val)
+  {
+    reg_ref(r) = val;
+  }
+
+  constexpr reg_t& eax() { return reg_ref(regs::reg::eax); }
+  constexpr const reg_t& eax() const { return reg_ref(regs::reg::eax); }
+  constexpr reg_t& ebx() { return reg_ref(regs::reg::ebx); }
+  constexpr const reg_t& ebx() const { return reg_ref(regs::reg::ebx); }
+  constexpr reg_t& ecx() { return reg_ref(regs::reg::ecx); }
+  constexpr const reg_t& ecx() const { return reg_ref(regs::reg::ecx); }
+  constexpr reg_t& edx() { return reg_ref(regs::reg::edx); }
+  constexpr const reg_t& edx() const { return reg_ref(regs::reg::edx); }
+  constexpr reg_t& ebp() { return reg_ref(regs::reg::ebp); }
+  constexpr const reg_t& ebp() const { return reg_ref(regs::reg::ebp); }
+  constexpr reg_t& esp() { return reg_ref(regs::reg::esp); }
+  constexpr const reg_t& esp() const { return reg_ref(regs::reg::esp); }
+  constexpr reg_t& eip() { return reg_ref(regs::reg::eip); }
+  constexpr const reg_t& eip() const { return reg_ref(regs::reg::eip); }
+
+  vector<unit_t, amount_of_ram> ram;
+  bool zf{false};
+
+private:
+  constexpr void init_regs()
+  {
+    eax() = ebx() = ecx() = edx() = ebp() = esp() = eip() = 0u;
+  }
+
+  template <typename register_t>
+  constexpr decltype(auto) reg_ref(register_t r)
+  {
+    return regs_vals[static_cast<size_t>(r)];
+  }
+
+  template <typename register_t>
+  constexpr decltype(auto) reg_ref(register_t r) const
+  {
+    return regs_vals[static_cast<size_t>(r)];
+  }
+
+  vector<reg_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
+};
+
+
 namespace assemble
 {
+  template <typename token_it_t>
+  constexpr auto get_next_opcodes(token_it_t &token_it)
+  {
+    using opcodes_t = vector<unit_t, instructions::get_max_eip_change()>;
+
+    opcodes_t opcodes;
+    algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
+
+    //instruction arg1, arg2, arg3 ...
+
+
+    return opcodes;
+  }
+
   template <size_t amount_of_ram>
   class assembler
   {
@@ -625,7 +709,22 @@ namespace assemble
     template <typename tokens_t>
     constexpr auto assemble(tokens_t tokens) const
     {
-      //todo
+      machine<amount_of_ram> m;
+
+      auto opcodes_dest = m.ram.begin();
+
+      auto token_it = tokens.begin();
+      while(token_it != tokens.end())
+      {
+        const auto opcodes = get_next_opcodes(token_it);
+        algo::copy(opcodes.begin(), opcodes.end(), opcodes_dest);
+        algo::advance(opcodes_dest, opcodes.size());
+      }
+      
+      m.esp() = amount_of_ram - 1;
+      m.eip() = 0u;
+
+      return m;
     }
   };
 }
