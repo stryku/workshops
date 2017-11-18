@@ -692,6 +692,7 @@ namespace assemble
   constexpr auto get_next_opcodes(token_it_t &token_it)
   {
     using opcodes_t = vector<unit_t, instructions::get_max_eip_change()>;
+    using inst_t = instructions::instruction;
 
     opcodes_t opcodes;
     algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
@@ -702,22 +703,22 @@ namespace assemble
 
     switch(instruction)
     {
-      case instructions::instruction::exit: //exit
+      case inst_t::exit: //exit
       break;
 
-      case instructions::instruction::je: // je pointer
+      case inst_t::je: // je pointer
       {
         const auto ip = algo::stoui(*algo::next(token_it));
         opcodes.push_back(ip);
       }break;
 
-      case instructions::instruction::jmp: // jmp pointer
+      case inst_t::jmp: // jmp pointer
       {
         const auto ip = algo::stoui(*algo::next(token_it));
         opcodes.push_back(ip);
       }break;
 
-      case instructions::instruction::add_reg_mem_ptr_reg_plus_val: // add reg , [ reg2 + val ]
+      case inst_t::add_reg_mem_ptr_reg_plus_val: // add reg , [ reg2 + val ]
       {
         const auto reg = regs::token_to_reg(*algo::next(token_it));
         const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
@@ -728,7 +729,7 @@ namespace assemble
         opcodes.push_back(val);
       }break;
 
-      case instructions::instruction::sub_reg_val: // sub reg , val
+      case inst_t::sub_reg_val: // sub reg , val
       {
         const auto reg = regs::token_to_reg(*algo::next(token_it));
         const auto val = algo::stoui(*algo::next(token_it, 3));
@@ -737,13 +738,13 @@ namespace assemble
         opcodes.push_back(val);
       }break;
 
-      case instructions::instruction::inc: // inc reg
+      case inst_t::inc: // inc reg
       {
         const auto reg = regs::token_to_reg(*algo::next(token_it));
         opcodes.push_back(regs::to_unit_t(reg));
       }break;
 
-      case instructions::instruction::cmp: // cmp reg , val
+      case inst_t::cmp: // cmp reg , val
       {
         const auto reg = regs::token_to_reg(*algo::next(token_it));
         const auto val = algo::stoui(*algo::next(token_it, 3));
@@ -752,7 +753,7 @@ namespace assemble
         opcodes.push_back(val);
       }break;
 
-      case instructions::instruction::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
+      case inst_t::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
       {
         const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
         const auto val = algo::stoui(*algo::next(token_it, 4));
@@ -763,7 +764,7 @@ namespace assemble
         opcodes.push_back(regs::to_unit_t(reg2));
       }break;
 
-      case instructions::instruction::mov_mem_val_ptr_reg_plus_val: // mov [ reg + val ] , val2
+      case inst_t::mov_mem_val_ptr_reg_plus_val: // mov [ reg + val ] , val2
       {
         const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
         const auto val = algo::stoui(*algo::next(token_it, 4));
@@ -774,7 +775,7 @@ namespace assemble
         opcodes.push_back(val2);
       }break;
 
-      case instructions::instruction::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
+      case inst_t::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
       {
         const auto reg = regs::token_to_reg(*algo::next(token_it));
         const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
@@ -785,7 +786,7 @@ namespace assemble
         opcodes.push_back(val);
       }break;
 
-      case instructions::instruction::mov_reg_reg: // mov reg , reg2
+      case inst_t::mov_reg_reg: // mov reg , reg2
       {
         const auto reg = regs::token_to_reg(*algo::next(token_it));
         const auto reg2 = regs::token_to_reg(*algo::next(token_it, 3));
@@ -794,7 +795,7 @@ namespace assemble
         opcodes.push_back(regs::to_unit_t(reg2));
       }break;
 
-      case instructions::instruction::mov_reg_val: // mov reg , val
+      case inst_t::mov_reg_val: // mov reg , val
       {
         const auto reg = regs::token_to_reg(*algo::next(token_it));
         const auto val = algo::stoui(*algo::next(token_it, 3));

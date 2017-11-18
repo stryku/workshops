@@ -703,6 +703,7 @@ namespace assemble
   constexpr auto get_next_opcodes(token_it_t &token_it)
   {
     using opcodes_t = vector<size_t, instructions::get_max_eip_change()>;
+    using inst_t = instructions::instruction;
 
     opcodes_t opcodes;
 
