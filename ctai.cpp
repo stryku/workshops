@@ -501,18 +501,15 @@ namespace labels
 {
   struct label_metadata
   {
-    constexpr label_metadata()
-      : name{}
-      , ip{ 0u }
-    {}
+    constexpr label_metadata() = default;
 
     constexpr label_metadata(string name, size_t ip)
       : name{ name }
       , ip{ ip }
     {}
 
-    string name;
-    size_t ip;
+    string name{};
+    size_t ip{ 0u };
   };
 
   template <typename token_t>
@@ -538,11 +535,9 @@ namespace labels
     {
       vector<label_metadata, labels_count> labels;
       size_t ip{ 0u };
-      auto tokens_cp = tokens;
-      auto end = tokens_cp.end();
+      auto current_token_it = tokens.begin();
 
-      auto current_token_it = tokens_cp.begin();
-      while(current_token_it != end)
+      while(current_token_it != tokens.end())
       {
         if(current_token_it->front() == ':')
         {
