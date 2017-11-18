@@ -24,7 +24,7 @@ namespace algo
   }
 
   template <typename it_t, typename value_t>
-  constexpr void fill(it_t first,it_t last, value_t value)
+  constexpr void fill(it_t first,it_t last, const value_t& value)
   {
     while (first != last) 
     {
@@ -33,14 +33,14 @@ namespace algo
   }
 
   template <typename it_t, typename value_t>
-  constexpr size_t count(it_t first, it_t last, value_t value)
+  constexpr size_t count(it_t first, it_t last, const value_t& value)
   {
-    size_t ret{ 0u };
+    size_t result{ 0u };
     while (first != last) 
     {
-      ret += *first++ == value;
+      result += *first++ == value;
     }
-    return ret;
+    return result;
   }
 
   template <typename it_t, typename it2_t>
@@ -107,7 +107,7 @@ namespace algo
   }
 }
 
-template <typename ty, size_t N>
+template <typename ty, size_t n>
 class vector
 {
 public:
@@ -121,7 +121,7 @@ public:
     return m_arr;
   }
 
-  constexpr const auto begin() const
+  constexpr auto begin() const
   {
     return m_arr;
   }
@@ -131,17 +131,17 @@ public:
     return begin() + size();
   }
 
-  constexpr const auto end() const
+  constexpr auto end() const
   {
     return begin() + size();
   }
 
-  constexpr char front() const
+  constexpr auto front() const
   {
     return *begin();
   }
 
-  constexpr void push_back(ty val)
+  constexpr auto push_back(const ty& val)
   {
     m_arr[m_size++] = val;
   }
@@ -157,37 +157,37 @@ public:
   }
 
   template <size_t rhs_n>
-  constexpr bool operator==(const vector<ty, rhs_n>& rhs) const
+  constexpr auto operator==(const vector<ty, rhs_n>& rhs) const
   {
-    return size() == rhs.size() &&
-           algo::equal(begin(), end(), rhs.begin());
+    return size() == rhs.size()
+        && algo::equal(begin(), end(), rhs.begin());
   }
 
-  constexpr void resize_to_reserved()
+  constexpr auto resize_to_reserved()
   {
-    m_size = N;
+    m_size = n;
   }
 
 protected:
   constexpr auto reserved_end()
   {
-    return begin() + N;
+    return begin() + n;
   }
-  constexpr const auto reserved_end() const
+  constexpr auto reserved_end() const
   {
-    return begin() + N;
+    return begin() + n;
   }
 
 private:
-  ty m_arr[N]{};
+  ty m_arr[n]{};
   size_t m_size{ 0u };
 };
 
-template <size_t N>
-class fixed_string : public vector<char, N>
+template <size_t n>
+class fixed_string : public vector<char, n>
 {
 private:
-  using base = vector<char, N>;
+  using base = vector<char, n>;
 
 public:
   constexpr fixed_string()
@@ -196,12 +196,11 @@ public:
   }
 
   template <typename... ts>
-  constexpr fixed_string(ts... chars)
+  constexpr fixed_string(ts... args)
   {
     static_assert(traits::all_true<std::is_same<ts, char>...>);
 
-    const auto list = { chars... };
-    for(const auto c : list)
+    for(const auto c : { args... })
     {
       base::push_back(c);
     }
@@ -210,14 +209,14 @@ public:
 
 
 template <typename... ts>
-fixed_string(ts... args) -> fixed_string<sizeof...(ts) + 1>;
+fixed_string(ts...) -> fixed_string<sizeof...(ts) + 1u>; // +1 for '\0'
 
 using string = fixed_string<10u>;
 
-template <typename T, T... chars>
+template <typename T, T... args>
 constexpr auto operator"" _s()
 {
-  return fixed_string{ chars... };
+  return fixed_string{ args... };
 }
 
 namespace algo
@@ -232,10 +231,10 @@ namespace algo
       return result;
     }
 
-    while(val > 0)
+    while(val > 0u)
     {
-      result.push_back(static_cast<char>(val % 10 + '0'));
-      val /= 10;
+      result.push_back(static_cast<char>(val % 10u + '0'));
+      val /= 10u;
     }
 
     algo::reverse(result.begin(), result.end());
@@ -249,7 +248,7 @@ namespace algo
 
     for(const char c : str)
     {
-        result *= 10;
+        result *= 10u;
         result += static_cast<size_t>(c - '0');
     }
 
@@ -286,12 +285,13 @@ template <size_t tokens_count>
 class tokenizer
 {
 public:
-  using tokens_array_t = vector<string, tokens_count>;
 
   template <typename string_t>
   constexpr auto tokenize(string_t str) const
   {
-    tokens_array_t tokens;
+    using tokens_t = vector<string, tokens_count>;
+
+    tokens_t tokens;
     auto iter = str.begin();
 
     for(size_t i = 0u; i < tokens_count; ++i)
@@ -299,30 +299,23 @@ public:
       auto token = get_token(iter);
       tokens.push_back(token);
 
-      algo::advance(iter, token.size() + 1);
+      algo::advance(iter, token.size() + 1u); //+1 to omit space
     }
 
     return tokens;
   }
 
 private:
-  constexpr string get_token(const char* ptr) const
+  constexpr auto get_token(const char* ptr) const
   {
-    if(*ptr == '\0')
-    {
-      return {};
-    }
-    else
-    {
-      string str;
+    string str;
 
-      while(*ptr != ' ' && *ptr != '\0')
-      {
-        str.push_back(*ptr++);
-      }
-
-      return str;
+    while(*ptr != ' ' && *ptr != '\0')
+    {
+      str.push_back(*ptr++);
     }
+
+    return str;
   }
 };
 
@@ -508,18 +501,15 @@ namespace labels
 {
   struct label_metadata
   {
-    constexpr label_metadata()
-      : name{}
-      , ip{ 0u }
-    {}
+    constexpr label_metadata() = default;
 
     constexpr label_metadata(string name, size_t ip)
       : name{ name }
       , ip{ ip }
     {}
 
-    string name;
-    size_t ip;
+    string name{};
+    size_t ip{ 0u };
   };
 
   template <typename token_t>
@@ -545,11 +535,9 @@ namespace labels
     {
       vector<label_metadata, labels_count> labels;
       size_t ip{ 0u };
-      auto tokens_cp = tokens;
-      auto end = tokens_cp.end();
+      auto current_token_it = tokens.begin();
 
-      auto current_token_it = tokens_cp.begin();
-      while(current_token_it != end)
+      while(current_token_it != tokens.end())
       {
         if(current_token_it->front() == ':')
         {
@@ -618,6 +606,7 @@ namespace labels
         }
         else
         {
+          //Regular token
           result_tokens.push_back(token);
         }
       }
@@ -648,13 +637,13 @@ public:
   template <typename reg_t>
   constexpr reg_t get_reg(reg_t r)
   {
-      return reg_ref(r);
+    return reg_ref(r);
   }
 
   template <typename reg_t>
   constexpr void set_reg(reg_t r, reg_t val)
   {
-      reg_ref(r) = val;
+    reg_ref(r) = val;
   }
 
   constexpr reg_t& eax() { return reg_ref(regs::reg::eax); }
@@ -682,15 +671,15 @@ private:
   }
 
   template <typename register_t>
-  constexpr reg_t& reg_ref(register_t r)
+  constexpr decltype(auto) reg_ref(register_t r)
   {
-      return regs_vals[regs::to_unit_t(r)];
+    return regs_vals[static_cast<size_t>(r)];
   }
 
   template <typename register_t>
-  constexpr const reg_t& reg_ref(register_t r) const
+  constexpr decltype(auto) reg_ref(register_t r) const
   {
-      return regs_vals[regs::to_unit_t(r)];
+    return regs_vals[static_cast<size_t>(r)];
   }
 
   vector<reg_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
@@ -707,116 +696,115 @@ namespace assemble
     opcodes_t opcodes;
     algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
     
-    const auto token = *token_it;
     const auto instruction = instructions::get_next_instruction(token_it);
 
     opcodes.push_back(instruction);
 
     switch(instruction)
     {
-        case instructions::instruction::exit: //exit
-        break;
+      case instructions::instruction::exit: //exit
+      break;
 
-        case instructions::instruction::je: // je pointer
-        {
-            const auto ip = algo::stoui(*algo::next(token_it));
-            opcodes.push_back(ip);
-        }break;
+      case instructions::instruction::je: // je pointer
+      {
+        const auto ip = algo::stoui(*algo::next(token_it));
+        opcodes.push_back(ip);
+      }break;
 
-        case instructions::instruction::jmp: // jmp pointer
-        {
-            const auto ip = algo::stoui(*algo::next(token_it));
-            opcodes.push_back(ip);
-        }break;
+      case instructions::instruction::jmp: // jmp pointer
+      {
+        const auto ip = algo::stoui(*algo::next(token_it));
+        opcodes.push_back(ip);
+      }break;
 
-        case instructions::instruction::add_reg_mem_ptr_reg_plus_val: // add reg , [ reg2 + val ]
-        {
-            const auto reg = regs::token_to_reg(*algo::next(token_it));
-            const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
-            const auto val = algo::stoui(*algo::next(token_it, 6));
+      case instructions::instruction::add_reg_mem_ptr_reg_plus_val: // add reg , [ reg2 + val ]
+      {
+        const auto reg = regs::token_to_reg(*algo::next(token_it));
+        const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
+        const auto val = algo::stoui(*algo::next(token_it, 6));
 
-            opcodes.push_back(regs::to_unit_t(reg));
-            opcodes.push_back(regs::to_unit_t(reg2));
-            opcodes.push_back(val);
-        }break;
+        opcodes.push_back(regs::to_unit_t(reg));
+        opcodes.push_back(regs::to_unit_t(reg2));
+        opcodes.push_back(val);
+      }break;
 
-        case instructions::instruction::sub_reg_val: // sub reg , val
-        {
-            const auto reg = regs::token_to_reg(*algo::next(token_it));
-            const auto val = algo::stoui(*algo::next(token_it, 3));
+      case instructions::instruction::sub_reg_val: // sub reg , val
+      {
+        const auto reg = regs::token_to_reg(*algo::next(token_it));
+        const auto val = algo::stoui(*algo::next(token_it, 3));
 
-            opcodes.push_back(regs::to_unit_t(reg));
-            opcodes.push_back(val);
-        }break;
+        opcodes.push_back(regs::to_unit_t(reg));
+        opcodes.push_back(val);
+      }break;
 
-        case instructions::instruction::inc: // inc reg
-        {
-            const auto reg = regs::token_to_reg(*algo::next(token_it));
-            opcodes.push_back(regs::to_unit_t(reg));
-        }break;
+      case instructions::instruction::inc: // inc reg
+      {
+        const auto reg = regs::token_to_reg(*algo::next(token_it));
+        opcodes.push_back(regs::to_unit_t(reg));
+      }break;
 
-        case instructions::instruction::cmp: // cmp reg , val
-        {
-            const auto reg = regs::token_to_reg(*algo::next(token_it));
-            const auto val = algo::stoui(*algo::next(token_it, 3));
+      case instructions::instruction::cmp: // cmp reg , val
+      {
+        const auto reg = regs::token_to_reg(*algo::next(token_it));
+        const auto val = algo::stoui(*algo::next(token_it, 3));
 
-            opcodes.push_back(regs::to_unit_t(reg));
-            opcodes.push_back(val);
-        }break;
+        opcodes.push_back(regs::to_unit_t(reg));
+        opcodes.push_back(val);
+      }break;
 
-        case instructions::instruction::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
-        {
-            const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
-            const auto val = algo::stoui(*algo::next(token_it, 4));
-            const auto reg2 = regs::token_to_reg(*algo::next(token_it, 7));
+      case instructions::instruction::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
+      {
+        const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
+        const auto val = algo::stoui(*algo::next(token_it, 4));
+        const auto reg2 = regs::token_to_reg(*algo::next(token_it, 7));
 
-            opcodes.push_back(regs::to_unit_t(reg));
-            opcodes.push_back(val);
-            opcodes.push_back(regs::to_unit_t(reg2));
-        }break;
+        opcodes.push_back(regs::to_unit_t(reg));
+        opcodes.push_back(val);
+        opcodes.push_back(regs::to_unit_t(reg2));
+      }break;
 
-        case instructions::instruction::mov_mem_val_ptr_reg_plus_val: // mov [ reg + val ] , val2
-        {
-            const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
-            const auto val = algo::stoui(*algo::next(token_it, 4));
-            const auto val2 = algo::stoui(*algo::next(token_it, 7));
+      case instructions::instruction::mov_mem_val_ptr_reg_plus_val: // mov [ reg + val ] , val2
+      {
+        const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
+        const auto val = algo::stoui(*algo::next(token_it, 4));
+        const auto val2 = algo::stoui(*algo::next(token_it, 7));
 
-            opcodes.push_back(regs::to_unit_t(reg));
-            opcodes.push_back(val);
-            opcodes.push_back(val2);
-        }break;
+        opcodes.push_back(regs::to_unit_t(reg));
+        opcodes.push_back(val);
+        opcodes.push_back(val2);
+      }break;
 
-        case instructions::instruction::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
-        {
-            const auto reg = regs::token_to_reg(*algo::next(token_it));
-            const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
-            const auto val = algo::stoui(*algo::next(token_it, 6));
+      case instructions::instruction::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
+      {
+        const auto reg = regs::token_to_reg(*algo::next(token_it));
+        const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
+        const auto val = algo::stoui(*algo::next(token_it, 6));
 
-            opcodes.push_back(regs::to_unit_t(reg));
-            opcodes.push_back(regs::to_unit_t(reg2));
-            opcodes.push_back(val);
-        }break;
+        opcodes.push_back(regs::to_unit_t(reg));
+        opcodes.push_back(regs::to_unit_t(reg2));
+        opcodes.push_back(val);
+      }break;
 
-        case instructions::instruction::mov_reg_reg: // mov reg , reg2
-        {
-            const auto reg = regs::token_to_reg(*algo::next(token_it));
-            const auto reg2 = regs::token_to_reg(*algo::next(token_it, 3));
+      case instructions::instruction::mov_reg_reg: // mov reg , reg2
+      {
+        const auto reg = regs::token_to_reg(*algo::next(token_it));
+        const auto reg2 = regs::token_to_reg(*algo::next(token_it, 3));
 
-            opcodes.push_back(regs::to_unit_t(reg));
-            opcodes.push_back(regs::to_unit_t(reg2));
-        }break;
+        opcodes.push_back(regs::to_unit_t(reg));
+        opcodes.push_back(regs::to_unit_t(reg2));
+      }break;
 
-        case instructions::instruction::mov_reg_val: // mov reg , val
-        {
-            const auto reg = regs::token_to_reg(*algo::next(token_it));
-            const auto val = algo::stoui(*algo::next(token_it, 3));
+      case instructions::instruction::mov_reg_val: // mov reg , val
+      {
+        const auto reg = regs::token_to_reg(*algo::next(token_it));
+        const auto val = algo::stoui(*algo::next(token_it, 3));
 
-            opcodes.push_back(regs::to_unit_t(reg));
-            opcodes.push_back(val);
-        }break;
+        opcodes.push_back(regs::to_unit_t(reg));
+        opcodes.push_back(val);
+      }break;
 
-        default:
-        break;
+      default:
+      break;
     }
 
     const auto token_count = instructions::get_token_count(instruction);
@@ -845,37 +833,56 @@ namespace assemble
       }
       
       m.esp() = amount_of_ram - 1;
-      m.eip() = 0;
+      m.eip() = 0u;
 
       return m;
     }
   };
 }
 
+namespace execute
+{
+  template <typename machine_t>
+  constexpr bool execute_next_instruction(machine_t& machine)
+  {
+    //todo
+
+    return true;
+  }
+
+  template <typename machine_t>
+  constexpr auto execute(machine_t machine)
+  {
+    //todo
+
+    return machine.eax();
+  }
+}
+
 constexpr auto asm_code = 
-    "sub esp , 4 "
-    "mov ebp , esp "
-    "mov [ ebp + 2 ] , 0 "
-    "mov [ ebp + 3 ] , 1 "
-    "mov [ ebp + 4 ] , 1 "
-    "mov [ ebp + 1 ] , 1 "
-    "mov ecx , 1 "
+  "sub esp , 4 "
+  "mov ebp , esp "
+  "mov [ ebp + 2 ] , 0 "
+  "mov [ ebp + 3 ] , 1 "
+  "mov [ ebp + 4 ] , 1 "
+  "mov [ ebp + 1 ] , 1 "
+  "mov ecx , 1 "
 ":loop "
-    "cmp ecx , 6 " //we want to get 6th fibonacci element
-    "je .end "
-    "mov eax , [ ebp + 3 ] "
-    "add eax , [ ebp + 2 ] "
-    "mov [ ebp + 4 ] , eax "
-    "mov eax , [ ebp + 3 ] "
-    "mov [ ebp + 2 ] , eax "
-    "mov eax , [ ebp + 4 ] "
-    "mov [ ebp + 3 ] , eax "
-    "mov eax , [ ebp + 1 ] "
-    "inc ecx "
-    "jmp .loop "
+  "cmp ecx , 6 " //we want to get 6th fibonacci element
+  "je .end "
+  "mov eax , [ ebp + 3 ] "
+  "add eax , [ ebp + 2 ] "
+  "mov [ ebp + 4 ] , eax "
+  "mov eax , [ ebp + 3 ] "
+  "mov [ ebp + 2 ] , eax "
+  "mov eax , [ ebp + 4 ] "
+  "mov [ ebp + 3 ] , eax "
+  "mov eax , [ ebp + 1 ] "
+  "inc ecx "
+  "jmp .loop "
 ":end "
-    "mov eax , [ ebp + 4 ] "
-    "exit"_s;
+  "mov eax , [ ebp + 4 ] "
+  "exit"_s;
 
 int main()
 {
@@ -892,9 +899,9 @@ int main()
   constexpr assemble::assembler<1024> assembler;
   constexpr auto m = assembler.assemble(tokens_replaced_labels);
 
-  //constexpr auto result = execute::execute(m);
+  constexpr auto result = execute::execute(m);
 
-  return m.ram.size();
+  return m.eax();
 }
 
 
