@@ -696,7 +696,6 @@ namespace assemble
     opcodes_t opcodes;
     algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
     
-    const auto token = *token_it;
     const auto instruction = instructions::get_next_instruction(token_it);
 
     opcodes.push_back(instruction);
