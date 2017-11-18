@@ -143,12 +143,12 @@ public:
     m_arr[m_size++] = val;
   }
 
-  constexpr ty& operator[](size_t i)
+  constexpr decltype(auto) operator[](size_t i)
   {
     return m_arr[i];
   }
 
-  constexpr const ty& operator[](size_t i) const
+  constexpr decltype(auto) operator[](size_t i) const
   {
     return m_arr[i];
   }
