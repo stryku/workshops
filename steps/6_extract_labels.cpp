@@ -24,7 +24,7 @@ namespace algo
   }
 
   template <typename it_t, typename value_t>
-  constexpr void fill(it_t first,it_t last, value_t value)
+  constexpr void fill(it_t first,it_t last, const value_t& value)
   {
     while (first != last) 
     {
@@ -33,14 +33,14 @@ namespace algo
   }
 
   template <typename it_t, typename value_t>
-  constexpr size_t count(it_t first, it_t last, value_t value)
+  constexpr size_t count(it_t first, it_t last, const value_t& value)
   {
-    size_t ret{ 0u };
+    size_t result{ 0u };
     while (first != last) 
     {
-      ret += *first++ == value;
+      result += *first++ == value;
     }
-    return ret;
+    return result;
   }
 
   template <typename it_t, typename it2_t>
@@ -107,7 +107,7 @@ namespace algo
   }
 }
 
-template <typename ty, size_t N>
+template <typename ty, size_t n>
 class vector
 {
 public:
@@ -121,7 +121,7 @@ public:
     return m_arr;
   }
 
-  constexpr const auto begin() const
+  constexpr auto begin() const
   {
     return m_arr;
   }
@@ -131,17 +131,17 @@ public:
     return begin() + size();
   }
 
-  constexpr const auto end() const
+  constexpr auto end() const
   {
     return begin() + size();
   }
 
-  constexpr char front() const
+  constexpr auto front() const
   {
     return *begin();
   }
 
-  constexpr void push_back(ty val)
+  constexpr auto push_back(const ty& val)
   {
     m_arr[m_size++] = val;
   }
@@ -157,37 +157,37 @@ public:
   }
 
   template <size_t rhs_n>
-  constexpr bool operator==(const vector<ty, rhs_n>& rhs) const
+  constexpr auto operator==(const vector<ty, rhs_n>& rhs) const
   {
-    return size() == rhs.size() &&
-           algo::equal(begin(), end(), rhs.begin());
+    return size() == rhs.size()
+        && algo::equal(begin(), end(), rhs.begin());
   }
 
-  constexpr void resize_to_reserved()
+  constexpr auto resize_to_reserved()
   {
-    m_size = N;
+    m_size = n;
   }
 
 protected:
   constexpr auto reserved_end()
   {
-    return begin() + N;
+    return begin() + n;
   }
-  constexpr const auto reserved_end() const
+  constexpr auto reserved_end() const
   {
-    return begin() + N;
+    return begin() + n;
   }
 
 private:
-  ty m_arr[N]{};
+  ty m_arr[n]{};
   size_t m_size{ 0u };
 };
 
-template <size_t N>
-class fixed_string : public vector<char, N>
+template <size_t n>
+class fixed_string : public vector<char, n>
 {
 private:
-  using base = vector<char, N>;
+  using base = vector<char, n>;
 
 public:
   constexpr fixed_string()
@@ -196,12 +196,11 @@ public:
   }
 
   template <typename... ts>
-  constexpr fixed_string(ts... chars)
+  constexpr fixed_string(ts... args)
   {
     static_assert(traits::all_true<std::is_same<ts, char>...>);
 
-    const auto list = { chars... };
-    for(const auto c : list)
+    for(const auto c : { args... })
     {
       base::push_back(c);
     }
@@ -210,14 +209,14 @@ public:
 
 
 template <typename... ts>
-fixed_string(ts... args) -> fixed_string<sizeof...(ts) + 1>;
+fixed_string(ts...) -> fixed_string<sizeof...(ts) + 1u>; // +1 for '\0'
 
 using string = fixed_string<10u>;
 
-template <typename T, T... chars>
+template <typename T, T... args>
 constexpr auto operator"" _s()
 {
-  return fixed_string{ chars... };
+  return fixed_string{ args... };
 }
 
 namespace algo
@@ -232,10 +231,10 @@ namespace algo
       return result;
     }
 
-    while(val > 0)
+    while(val > 0u)
     {
-      result.push_back(static_cast<char>(val % 10 + '0'));
-      val /= 10;
+      result.push_back(static_cast<char>(val % 10u + '0'));
+      val /= 10u;
     }
 
     algo::reverse(result.begin(), result.end());
@@ -249,7 +248,7 @@ namespace algo
 
     for(const char c : str)
     {
-        result *= 10;
+        result *= 10u;
         result += static_cast<size_t>(c - '0');
     }
 
@@ -286,12 +285,13 @@ template <size_t tokens_count>
 class tokenizer
 {
 public:
-  using tokens_array_t = vector<string, tokens_count>;
 
   template <typename string_t>
   constexpr auto tokenize(string_t str) const
   {
-    tokens_array_t tokens;
+    using tokens_t = vector<string, tokens_count>;
+
+    tokens_t tokens;
     auto iter = str.begin();
 
     for(size_t i = 0u; i < tokens_count; ++i)
@@ -299,30 +299,23 @@ public:
       auto token = get_token(iter);
       tokens.push_back(token);
 
-      algo::advance(iter, token.size() + 1);
+      algo::advance(iter, token.size() + 1u); //+1 to omit space
     }
 
     return tokens;
   }
 
 private:
-  constexpr string get_token(const char* ptr) const
+  constexpr auto get_token(const char* ptr) const
   {
-    if(*ptr == '\0')
-    {
-      return {};
-    }
-    else
-    {
-      string str;
+    string str;
 
-      while(*ptr != ' ' && *ptr != '\0')
-      {
-        str.push_back(*ptr++);
-      }
-
-      return str;
+    while(*ptr != ' ' && *ptr != '\0')
+    {
+      str.push_back(*ptr++);
     }
+
+    return str;
   }
 };
 
@@ -344,9 +337,9 @@ namespace regs
   };
 
   template <typename reg_t>
-  constexpr auto to_size_t(reg_t r)
+  constexpr auto to_unit_t(reg_t r)
   {
-      return static_cast<size_t>(r);
+      return static_cast<unit_t>(r);
   }
 
   template <typename token_t>
@@ -508,18 +501,13 @@ namespace labels
 {
   struct label_metadata
   {
-    constexpr label_metadata()
-      : name{}
-      , ip{ 0u }
-    {}
-
     constexpr label_metadata(string name, size_t ip)
       : name{ name }
       , ip{ ip }
     {}
 
-    string name;
-    size_t ip;
+    string name{};
+    size_t ip{ 0u };
   };
 
   template <typename token_t>
@@ -545,11 +533,9 @@ namespace labels
     {
       vector<label_metadata, labels_count> labels;
       size_t ip{ 0u };
-      auto tokens_cp = tokens;
-      auto end = tokens_cp.end();
+      auto current_token_it = tokens.begin();
 
-      auto current_token_it = tokens_cp.begin();
-      while(current_token_it != end)
+      while(current_token_it != tokens.end())
       {
         if(current_token_it->front() == ':')
         {
@@ -574,83 +560,32 @@ namespace labels
       return labels;
     }
   };
-
-  template <typename labels_t, typename token_t>
-  constexpr size_t get_label_ip(token_t token, labels_t labels)
-  {
-    const auto pred = [label_name = label_name_from_token(token)](const auto& label_metadata)
-    {
-      return label_name == label_metadata.name;
-    };
-
-    const auto found = algo::find_if(labels.begin(), labels.end(), pred);
-
-    return found == labels.end()
-           ? static_cast<size_t>(-1)
-           : found->ip;
-  }
-
-  template <size_t result_tokens_size>
-  class labels_replacer
-  {
-  public:
-    template <typename tokens_t, typename labels_metadata_t>
-    constexpr auto replace(tokens_t tokens, labels_metadata_t labels) const
-    {
-      using result_tokens_t = vector<string, result_tokens_size>;
-
-      result_tokens_t result_tokens;
-
-      for(const auto& token : tokens)
-      {
-        if(token.front() == ':') 
-        {
-          //Label declaration. Omit it
-        }
-        else if(token.front() == '.')
-        {
-          //Label reference. Replace with instruciton pointer
-
-          const auto label_ip = get_label_ip(token, labels);
-          const auto string_ip = algo::to_string(label_ip);
-
-          result_tokens.push_back(string_ip);
-        }
-        else
-        {
-          result_tokens.push_back(token);
-        }
-      }
-
-      return result_tokens;
-    }
-  };
 }
 
 constexpr auto asm_code = 
-    "sub esp , 4 "
-    "mov ebp , esp "
-    "mov [ ebp + 2 ] , 0 "
-    "mov [ ebp + 3 ] , 1 "
-    "mov [ ebp + 4 ] , 1 "
-    "mov [ ebp + 1 ] , 1 "
-    "mov ecx , 1 "
+  "sub esp , 4 "
+  "mov ebp , esp "
+  "mov [ ebp + 2 ] , 0 "
+  "mov [ ebp + 3 ] , 1 "
+  "mov [ ebp + 4 ] , 1 "
+  "mov [ ebp + 1 ] , 1 "
+  "mov ecx , 1 "
 ":loop "
-    "cmp ecx , 6 " //we want to get 6th fibonacci element
-    "je .end "
-    "mov eax , [ ebp + 3 ] "
-    "add eax , [ ebp + 2 ] "
-    "mov [ ebp + 4 ] , eax "
-    "mov eax , [ ebp + 3 ] "
-    "mov [ ebp + 2 ] , eax "
-    "mov eax , [ ebp + 4 ] "
-    "mov [ ebp + 3 ] , eax "
-    "mov eax , [ ebp + 1 ] "
-    "inc ecx "
-    "jmp .loop "
+  "cmp ecx , 6 " //we want to get 6th fibonacci element
+  "je .end "
+  "mov eax , [ ebp + 3 ] "
+  "add eax , [ ebp + 2 ] "
+  "mov [ ebp + 4 ] , eax "
+  "mov eax , [ ebp + 3 ] "
+  "mov [ ebp + 2 ] , eax "
+  "mov eax , [ ebp + 4 ] "
+  "mov [ ebp + 3 ] , eax "
+  "mov eax , [ ebp + 1 ] "
+  "inc ecx "
+  "jmp .loop "
 ":end "
-    "mov eax , [ ebp + 4 ] "
-    "exit"_s;
+  "mov eax , [ ebp + 4 ] "
+  "exit"_s;
 
 int main()
 {
@@ -661,13 +596,10 @@ int main()
   constexpr auto labels_count = algo::count(asm_code.begin(), asm_code.end(), ':');
   constexpr labels::labels_extractor<labels_count> labels_extractor;
   constexpr auto extracted_labels_metadata = labels_extractor.extract(tokens);
-  constexpr labels::labels_replacer<tokens_count> labels_replacer;
-  constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels_metadata);
+  //constexpr labels::labels_replacer<tokens_count> labels_replacer;
+  //constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels_metadata);
 
-  //constexpr assemble::assembler<1024> assembler;
-  //constexpr auto m = assembler.assemble_tokens(tokens_replaced_labels);
-
-  return tokens_replaced_labels.size();
+  return extracted_labels_metadata.size();
 }
 
 
@@ -753,37 +685,6 @@ namespace tests
     constexpr auto begin_label_token = ".begin"_s;
     constexpr auto middle_label_token = ".middle"_s;
     constexpr auto end_label_token = ".end"_s;
-
-    static_assert(get_label_ip(begin_label_token, extracted_labels) == 0u);
-    static_assert(get_label_ip(middle_label_token, extracted_labels) == 3u);
-    static_assert(get_label_ip(end_label_token, extracted_labels) == 6u);
-  }
-
-  namespace substitute_tests
-  {
-    constexpr auto text = ":begin "
-                          "je .begin "
-                          "mov eax , 1 "
-                          ":middle "
-                          "je .middle "
-                          "mov eax , 1 "
-                          ":end "
-                          "je .end"_s;
-    constexpr auto tokens_count = algo::count(text.begin(), text.end(), ' ') + 1;
-    constexpr tokenizer<tokens_count> ams_tokenizer;
-    constexpr auto tokens = ams_tokenizer.tokenize(text);
-    constexpr labels::labels_extractor<tokens_count> extractor;
-    constexpr auto extracted_labels = extractor.extract(tokens);
-    constexpr labels::labels_replacer<tokens_count> labels_replacer;
-    constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels);
-
-    constexpr auto begin_label_ip_str = "0"_s;
-    constexpr auto middle_label_ip_str = "5"_s;
-    constexpr auto end_label_ip_str = "10"_s;
-
-    static_assert(tokens_replaced_labels[1] == begin_label_ip_str);
-    static_assert(tokens_replaced_labels[7] == middle_label_ip_str);
-    static_assert(tokens_replaced_labels[13] == end_label_ip_str);
   }
 }
 
