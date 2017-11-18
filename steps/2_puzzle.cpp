@@ -21,7 +21,7 @@ namespace algo
   }
 
   template <typename it_t, typename value_t>
-  constexpr void fill(it_t first,it_t last, value_t value)
+  constexpr void fill(it_t first,it_t last, const value_t& value)
   {
     while (first != last) 
     {
@@ -30,14 +30,14 @@ namespace algo
   }
 
   template <typename it_t, typename value_t>
-  constexpr size_t count(it_t first, it_t last, value_t value)
+  constexpr size_t count(it_t first, it_t last, const value_t& value)
   {
-    size_t ret{ 0u };
+    size_t result{ 0u };
     while (first != last) 
     {
-      ret += *first++ == value;
+      result += *first++ == value;
     }
-    return ret;
+    return result;
   }
 
   template <typename it_t, typename it2_t>
@@ -104,7 +104,7 @@ namespace algo
   }
 }
 
-template <typename ty, size_t N>
+template <typename ty, size_t n>
 class vector
 {
 public:
@@ -118,7 +118,7 @@ public:
     return m_arr;
   }
 
-  constexpr const auto begin() const
+  constexpr auto begin() const
   {
     return m_arr;
   }
@@ -128,17 +128,17 @@ public:
     return begin() + size();
   }
 
-  constexpr const auto end() const
+  constexpr auto end() const
   {
     return begin() + size();
   }
 
-  constexpr char front() const
+  constexpr auto front() const
   {
     return *begin();
   }
 
-  constexpr void push_back(ty val)
+  constexpr auto push_back(const ty& val)
   {
     m_arr[m_size++] = val;
   }
@@ -154,37 +154,37 @@ public:
   }
 
   template <size_t rhs_n>
-  constexpr bool operator==(const vector<ty, rhs_n>& rhs) const
+  constexpr auto operator==(const vector<ty, rhs_n>& rhs) const
   {
-    return size() == rhs.size() &&
-           algo::equal(begin(), end(), rhs.begin());
+    return size() == rhs.size()
+        && algo::equal(begin(), end(), rhs.begin());
   }
 
-  constexpr void resize_to_reserved()
+  constexpr auto resize_to_reserved()
   {
-    m_size = N;
+    m_size = n;
   }
 
 protected:
   constexpr auto reserved_end()
   {
-    return begin() + N;
+    return begin() + n;
   }
-  constexpr const auto reserved_end() const
+  constexpr auto reserved_end() const
   {
-    return begin() + N;
+    return begin() + n;
   }
 
 private:
-  ty m_arr[N]{};
+  ty m_arr[n]{};
   size_t m_size{ 0u };
 };
 
-template <size_t N>
-class fixed_string : public vector<char, N>
+template <size_t n>
+class fixed_string : public vector<char, n>
 {
 private:
-  using base = vector<char, N>;
+  using base = vector<char, n>;
 
 public:
   constexpr fixed_string()
@@ -193,12 +193,11 @@ public:
   }
 
   template <typename... ts>
-  constexpr fixed_string(ts... chars)
+  constexpr fixed_string(ts... args)
   {
     static_assert(traits::all_true<std::is_same<ts, char>...>);
 
-    const auto list = { chars... };
-    for(const auto c : list)
+    for(const auto c : { args... })
     {
       base::push_back(c);
     }
@@ -207,14 +206,14 @@ public:
 
 
 template <typename... ts>
-fixed_string(ts... args) -> fixed_string<sizeof...(ts) + 1>;
+fixed_string(ts...) -> fixed_string<sizeof...(ts) + 1u>; // +1 for '\0'
 
 using string = fixed_string<10u>;
 
-template <typename T, T... chars>
+template <typename T, T... args>
 constexpr auto operator"" _s()
 {
-  return fixed_string{ chars... };
+  return fixed_string{ args... };
 }
 
 namespace algo
@@ -229,10 +228,10 @@ namespace algo
       return result;
     }
 
-    while(val > 0)
+    while(val > 0u)
     {
-      result.push_back(static_cast<char>(val % 10 + '0'));
-      val /= 10;
+      result.push_back(static_cast<char>(val % 10u + '0'));
+      val /= 10u;
     }
 
     algo::reverse(result.begin(), result.end());
@@ -246,7 +245,7 @@ namespace algo
 
     for(const char c : str)
     {
-        result *= 10;
+        result *= 10u;
         result += static_cast<size_t>(c - '0');
     }
 
@@ -255,35 +254,48 @@ namespace algo
 }
 
 constexpr auto asm_code = 
-    "sub esp , 4 "
-    "mov ebp , esp "
-    "mov [ ebp + 2 ] , 0 "
-    "mov [ ebp + 3 ] , 1 "
-    "mov [ ebp + 4 ] , 1 "
-    "mov [ ebp + 1 ] , 1 "
-    "mov ecx , 1 "
+  "sub esp , 4 "
+  "mov ebp , esp "
+  "mov [ ebp + 2 ] , 0 "
+  "mov [ ebp + 3 ] , 1 "
+  "mov [ ebp + 4 ] , 1 "
+  "mov [ ebp + 1 ] , 1 "
+  "mov ecx , 1 "
 ":loop "
-    "cmp ecx , 6 " //we want to get 6th fibonacci element
-    "je .end "
-    "mov eax , [ ebp + 3 ] "
-    "add eax , [ ebp + 2 ] "
-    "mov [ ebp + 4 ] , eax "
-    "mov eax , [ ebp + 3 ] "
-    "mov [ ebp + 2 ] , eax "
-    "mov eax , [ ebp + 4 ] "
-    "mov [ ebp + 3 ] , eax "
-    "mov eax , [ ebp + 1 ] "
-    "inc ecx "
-    "jmp .loop "
+  "cmp ecx , 6 " //we want to get 6th fibonacci element
+  "je .end "
+  "mov eax , [ ebp + 3 ] "
+  "add eax , [ ebp + 2 ] "
+  "mov [ ebp + 4 ] , eax "
+  "mov eax , [ ebp + 3 ] "
+  "mov [ ebp + 2 ] , eax "
+  "mov eax , [ ebp + 4 ] "
+  "mov [ ebp + 3 ] , eax "
+  "mov eax , [ ebp + 1 ] "
+  "inc ecx "
+  "jmp .loop "
 ":end "
-    "mov eax , [ ebp + 4 ] "
-    "exit"_s;
+  "mov eax , [ ebp + 4 ] "
+  "exit"_s;
+
+
+template <typename it_t>
+constexpr auto do_smth(it_t begin, it_t end)
+{
+  //auto vec = vector<char, size>{};
+  //                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  //...
+}
+
+constexpr const char foo[] = "foo";
 
 int main()
 {
-  constexpr auto tokens_count = algo::count(asm_code.begin(), asm_code.end(), ' ') + 1;
-  //constexpr tokenizer<tokens_count> ams_tokenizer;
-  //constexpr auto tokens = ams_tokenizer.tokenize(asm_code);
+  constexpr auto begin = std::begin(foo);
+  constexpr auto end = std::end(foo);
+
+  do_smth(begin, end);
 
   return 0;
 }
@@ -304,22 +316,6 @@ namespace tests
       static_assert(str[1] == 'r');
       static_assert(str[2] == 'r');
       static_assert(str[3] == '\0');
-  }
-
-  namespace fixed_string_tests
-  {
-    constexpr auto zero = algo::to_string(0u);
-    constexpr auto one = algo::to_string(1u);
-    constexpr auto twelve = algo::to_string(12u);
-    constexpr auto big = algo::to_string(147129847u);
-
-    constexpr auto expected_zero = "0"_s;
-    constexpr auto expected_one = "1"_s;
-    constexpr auto expected_twelve = "1"_s;
-    constexpr auto expected_big = "147129847"_s;
-
-    static_assert(zero == expected_zero);
-    static_assert(one == expected_one);
   }
 }
 

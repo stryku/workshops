@@ -6,7 +6,7 @@
 namespace algo
 {
   template <typename it_t, typename value_t>
-  constexpr void fill(it_t first,it_t last, value_t value)
+  constexpr void fill(it_t first,it_t last, const value_t& value)
   {
     while (first != last) 
     {
@@ -63,7 +63,7 @@ public:
     return *begin();
   }
 
-  constexpr auto push_back(ty val)
+  constexpr auto push_back(const ty& val)
   {
     m_arr[m_size++] = val;
   }
@@ -79,10 +79,10 @@ public:
   }
 
   template <size_t rhs_n>
-  constexpr bool operator==(const vector<ty, rhs_n>& rhs) const
+  constexpr auto operator==(const vector<ty, rhs_n>& rhs) const
   {
-    return size() == rhs.size() &&
-           algo::equal(begin(), end(), rhs.begin());
+    return size() == rhs.size()
+        && algo::equal(begin(), end(), rhs.begin());
   }
 
 private:
@@ -96,7 +96,7 @@ class fixed_string : public vector<char, n>
 public:
   constexpr fixed_string()
   {
-    // todo
+    //todo
   }
 };
 
