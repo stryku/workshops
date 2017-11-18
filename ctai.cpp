@@ -852,6 +852,7 @@ namespace execute
   constexpr bool execute_next_instruction(machine_t& machine)
   {
     const auto instruction = get_next_instruction(machine);
+    const auto ip = machine.eip();
 
     switch(instruction)
     {
@@ -859,7 +860,7 @@ namespace execute
       {
         if(machine.zf)
         {
-          const auto new_ip = machine.ram[machine.eip() + 1];
+          const auto new_ip = machine.ram[ip + 1];
           machine.eip() = new_ip;
           return false;
         }
@@ -867,17 +868,17 @@ namespace execute
 
       case instructions::instruction::jmp: // jmp pointer
       {
-        const auto new_ip = machine.ram[machine.eip() + 1];
+        const auto new_ip = machine.ram[ip + 1];
         machine.eip() = new_ip;
         return false;
       }break;
 
       case instructions::instruction::add_reg_mem_ptr_reg_plus_val: // add reg reg2 val
       {
-        const auto reg = machine.ram[machine.eip() + 1];
+        const auto reg = machine.ram[ip + 1];
         const auto reg_val = machine.get_reg(reg);
-        const auto reg2_val = machine.get_reg(machine.ram[machine.eip() + 2]);
-        const auto val = machine.ram[machine.eip() + 3];
+        const auto reg2_val = machine.get_reg(machine.ram[ip + 2]);
+        const auto val = machine.ram[ip + 3];
 
         const auto mem_ptr = reg2_val + val;
         const auto val_to_add = machine.ram[mem_ptr];
@@ -888,9 +889,9 @@ namespace execute
 
       case instructions::instruction::sub_reg_val: // sub reg val
       {
-        const auto reg = machine.ram[machine.eip() + 1];
+        const auto reg = machine.ram[ip + 1];
         const auto reg_val = machine.get_reg(reg);
-        const auto val = machine.ram[machine.eip() + 2];
+        const auto val = machine.ram[ip + 2];
 
         const auto new_reg_val = reg_val - val;
         machine.set_reg(reg, new_reg_val);
@@ -898,7 +899,7 @@ namespace execute
 
       case instructions::instruction::inc: // inc reg
       {
-        const auto reg = machine.ram[machine.eip() + 1];
+        const auto reg = machine.ram[ip + 1];
         const auto reg_val = machine.get_reg(reg);
 
         machine.set_reg(reg, reg_val + 1);
@@ -906,19 +907,19 @@ namespace execute
 
       case instructions::instruction::cmp: // cmp reg val
       {
-        const auto reg = machine.ram[machine.eip() + 1];
+        const auto reg = machine.ram[ip + 1];
         const auto reg_val = machine.get_reg(reg);
-        const auto val = machine.ram[machine.eip() + 2];
+        const auto val = machine.ram[ip + 2];
 
         machine.zf = reg_val == val;
       }break;
 
       case instructions::instruction::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
       {
-        const auto reg = machine.ram[machine.eip() + 1];
+        const auto reg = machine.ram[ip + 1];
         const auto reg_val = machine.get_reg(reg);
-        const auto val = machine.ram[machine.eip() + 2];
-        const auto reg2 = machine.ram[machine.eip() + 3];
+        const auto val = machine.ram[ip + 2];
+        const auto reg2 = machine.ram[ip + 3];
         const auto reg2_val = machine.get_reg(reg2);
 
         const auto mem_ptr = reg_val + val;
@@ -927,10 +928,10 @@ namespace execute
 
       case instructions::instruction::mov_mem_val_ptr_reg_plus_val: // mov [ reg + val ] , val2
       {
-        const auto reg = machine.ram[machine.eip() + 1];
+        const auto reg = machine.ram[ip + 1];
         const auto reg_val = machine.get_reg(reg);
-        const auto val = machine.ram[machine.eip() + 2];
-        const auto val2 = machine.ram[machine.eip() + 3];
+        const auto val = machine.ram[ip + 2];
+        const auto val2 = machine.ram[ip + 3];
 
         const auto mem_ptr = reg_val + val;
         machine.ram[mem_ptr] = val2;
@@ -938,10 +939,10 @@ namespace execute
 
       case instructions::instruction::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
       {
-        const auto reg = machine.ram[machine.eip() + 1];
-        const auto reg2 = machine.ram[machine.eip() + 2];
+        const auto reg = machine.ram[ip + 1];
+        const auto reg2 = machine.ram[ip + 2];
         const auto reg2_val = machine.get_reg(reg2);
-        const auto val = machine.ram[machine.eip() + 3];
+        const auto val = machine.ram[ip + 3];
 
         const auto mem_ptr = reg2_val + val;
         const auto new_reg_val = machine.ram[mem_ptr];
@@ -950,8 +951,8 @@ namespace execute
 
       case instructions::instruction::mov_reg_reg: // mov reg , reg2
       {
-        const auto reg = machine.ram[machine.eip() + 1];
-        const auto reg2 = machine.ram[machine.eip() + 2];
+        const auto reg = machine.ram[ip + 1];
+        const auto reg2 = machine.ram[ip + 2];
         const auto reg2_val = machine.get_reg(reg2);
 
         machine.set_reg(reg, reg2_val);
@@ -959,8 +960,8 @@ namespace execute
 
       case instructions::instruction::mov_reg_val: // mov reg , val
       {
-        const auto reg = machine.ram[machine.eip() + 1];
-        const auto val = machine.ram[machine.eip() + 2];
+        const auto reg = machine.ram[ip + 1];
+        const auto val = machine.ram[ip + 2];
 
         machine.set_reg(reg, val);
       }break;
