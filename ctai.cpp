@@ -671,15 +671,15 @@ private:
   }
 
   template <typename register_t>
-  constexpr reg_t& reg_ref(register_t r)
+  constexpr decltype(auto) reg_ref(register_t r)
   {
-    return regs_vals[regs::to_unit_t(r)];
+    return regs_vals[static_cast<size_t>(r)];
   }
 
   template <typename register_t>
-  constexpr const reg_t& reg_ref(register_t r) const
+  constexpr decltype(auto) reg_ref(register_t r) const
   {
-    return regs_vals[regs::to_unit_t(r)];
+    return regs_vals[static_cast<size_t>(r)];
   }
 
   vector<reg_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
