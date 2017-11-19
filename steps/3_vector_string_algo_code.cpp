@@ -253,6 +253,28 @@ namespace algo
   }
 }
 
+template <size_t tokens_count>
+class tokenizer
+{
+public:
+  template <typename string_t>
+  constexpr auto tokenize(const string_t& str) const
+  {
+    vector<string, tokens_count> tokens;
+
+    // todo
+
+    return tokens;
+  }
+
+private:
+  template <typename it_t>
+  constexpr auto get_token(it_t current_it) const
+  {
+    //todo
+  }
+};
+
 constexpr auto asm_code = 
   "sub esp , 4 "
   "mov ebp , esp "

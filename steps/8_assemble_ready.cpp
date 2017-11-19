@@ -844,19 +844,46 @@ namespace assemble
 namespace execute
 {
   template <typename machine_t>
-  constexpr bool execute_next_instruction(machine_t& machine)
+  constexpr auto get_next_instruction(const machine_t& m)
   {
+    using inst_t = instructions::instruction;
+
+    const auto ip = m.eip();
+    return static_cast<inst_t>(m.ram[ip]);
+  }
+
+  template <typename machine_t>
+  constexpr auto adjust_eip(machine_t& m)
+  {
+    const auto inst = get_next_instruction(m);
+    const auto opcodes_count = instructions::get_ip_change(inst);
+    m.eip() += opcodes_count;
+  }
+
+  template <typename machine_t>
+  constexpr bool execute_next_instruction(machine_t& m)
+  {
+    using inst_t = instructions::instruction;
     //todo
 
     return true;
   }
 
   template <typename machine_t>
-  constexpr auto execute(machine_t machine)
+  constexpr auto execute(machine_t m)
   {
-    //todo
+    using inst_t = instructions::instruction;
 
-    return machine.eax();
+    while(get_next_instruction(m) != inst_t::exit)
+    {
+      const auto need_to_adjust_eip = execute_next_instruction(m);
+      if(need_to_adjust_eip)
+      {
+        adjust_eip(m);
+      }
+    }
+
+    return m.eax();
   }
 }
 

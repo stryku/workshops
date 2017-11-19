@@ -82,8 +82,8 @@ protected:
   }
 
 private:
-  ty m_arr[n];
-  size_t m_size;
+  ty m_arr[n]{};
+  size_t m_size{ 0u };
 };
 
 int main()

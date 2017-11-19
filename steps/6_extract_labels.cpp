@@ -462,7 +462,7 @@ namespace instructions
     {
       auto next_token = *algo::next(token_it);
 
-      if(next_token == tokens::open_square_bracket) // mov [
+      if(next_token == tokens::open_square_bracket) // mov [ ? + ? ] , ?
       {
         auto token_after_comma = *algo::next(token_it, 7);
         if(is_register(token_after_comma)) 
@@ -474,7 +474,7 @@ namespace instructions
           return instruction::mov_mem_val_ptr_reg_plus_val;// mov [ reg + val ] , val2
         }
       }
-      else if(is_register(next_token)) // mov reg
+      else if(is_register(next_token)) // mov reg , ????
       {
         auto token_after_comma = *algo::next(token_it, 3);
 
@@ -501,6 +501,7 @@ namespace labels
 {
   struct label_metadata
   {
+    constexpr label_metadata() = default;
     constexpr label_metadata(string name, size_t ip)
       : name{ name }
       , ip{ ip }
@@ -558,6 +559,26 @@ namespace labels
       }
 
       return labels;
+    }
+  };
+
+  template <size_t tokens_count>
+  class labels_replacer
+  {
+  public:
+    template <typename tokens_t, typename labels_t>
+    constexpr auto replace(const tokens_t& tokens, const labels_t& labels) const
+    {
+      vector<string, tokens_count> result_tokens;
+
+      return result_tokens;
+    }
+
+  private:
+    template <typename token_t, typename labels_t>
+    constexpr auto get_label_ip(const token_t& token, const labels_t& labels) const
+    {
+
     }
   };
 }

@@ -695,6 +695,8 @@ namespace assemble
     using inst_t = instructions::instruction;
 
     opcodes_t opcodes;
+    
+    //todo
 
     return opcodes;
   }
@@ -763,10 +765,10 @@ int main()
   constexpr labels::labels_replacer<tokens_count> labels_replacer;
   constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels_metadata);
 
-  constexpr assemble::assembler<1024> assembler;
-  constexpr auto m = assembler.assemble(tokens_replaced_labels);
+  //constexpr assemble::assembler<1024> assembler;
+  //constexpr auto m = assembler.assemble(tokens_replaced_labels);
 
-  return m.eax();
+  return tokens_replaced_labels.size();
 }
 
 

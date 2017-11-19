@@ -298,6 +298,8 @@ namespace labels
 {
   struct label_metadata
   {
+    constexpr label_metadata() = default;
+    
     constexpr label_metadata(string name, size_t ip)
       : name{ name }
       , ip{ ip }
