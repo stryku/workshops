@@ -85,6 +85,21 @@ public:
         && algo::equal(begin(), end(), rhs.begin());
   }
 
+  constexpr auto resize_to_reserved()
+  {
+    m_size = n;
+  }
+
+protected:
+  constexpr auto reserved_end()
+  {
+    return begin() + n;
+  }
+  constexpr auto reserved_end() const
+  {
+    return begin() + n;
+  }
+
 private:
   ty m_arr[n];
   size_t m_size;

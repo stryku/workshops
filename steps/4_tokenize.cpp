@@ -294,6 +294,47 @@ private:
   }
 };
 
+namespace labels
+{
+  struct label_metadata
+  {
+    constexpr label_metadata(string name, size_t ip)
+      : name{ name }
+      , ip{ ip }
+    {}
+
+    string name{};
+    size_t ip{ 0u };
+  };
+
+  template <typename token_t>
+  constexpr string label_name_from_token(token_t token)
+  {
+    auto it = algo::next(token.begin());
+    string name;
+
+    while(*it != '\0')
+    {
+      name.push_back(*it++);
+    }
+
+    return name;
+  }
+
+  template <size_t labels_count>
+  class labels_extractor
+  {
+  public:
+    template <typename tokens_t>
+    constexpr auto extract(tokens_t tokens) const
+    {
+      vector<label_metadata, labels_count> labels;
+
+      return labels;
+    }
+  };
+}
+
 constexpr auto asm_code = 
   "sub esp , 4 "
   "mov ebp , esp "
@@ -329,7 +370,7 @@ int main()
   //constexpr labels::labels_extractor<labels_count> labels_extractor;
   //constexpr auto extracted_labels_metadata = labels_extractor.extract(tokens);
 
-  return tokens.size();
+  return 0;
 }
 
 

@@ -282,8 +282,8 @@ constexpr auto asm_code =
 template <typename it_t>
 constexpr auto do_smth(it_t begin, it_t end)
 {
-  //auto vec = vector<char, size>{};
-  //                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+  //auto copy = vector<decltype(*it), std::distance(begin, end)>{};
+  //                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
 
   //...
 }

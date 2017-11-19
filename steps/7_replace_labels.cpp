@@ -692,12 +692,9 @@ namespace assemble
   constexpr auto get_next_opcodes(token_it_t &token_it)
   {
     using opcodes_t = vector<unit_t, instructions::get_max_eip_change()>;
+    using inst_t = instructions::instruction;
 
     opcodes_t opcodes;
-    algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
-
-    //instruction arg1, arg2, arg3 ...
-
 
     return opcodes;
   }
@@ -766,11 +763,10 @@ int main()
   constexpr labels::labels_replacer<tokens_count> labels_replacer;
   constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels_metadata);
 
-  //constexpr assemble::assembler<1024> assembler;
-  //constexpr auto m = assembler.assemble(tokens_replaced_labels);
+  constexpr assemble::assembler<1024> assembler;
+  constexpr auto m = assembler.assemble(tokens_replaced_labels);
 
-
-  return tokens_replaced_labels.size();
+  return m.eax();
 }
 
 
