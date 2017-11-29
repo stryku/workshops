@@ -647,20 +647,20 @@ public:
     reg_ref(r) = val;
   }
 
-  constexpr reg_t& eax() { return reg_ref(regs::reg::eax); }
-  constexpr const reg_t& eax() const { return reg_ref(regs::reg::eax); }
-  constexpr reg_t& ebx() { return reg_ref(regs::reg::ebx); }
-  constexpr const reg_t& ebx() const { return reg_ref(regs::reg::ebx); }
-  constexpr reg_t& ecx() { return reg_ref(regs::reg::ecx); }
-  constexpr const reg_t& ecx() const { return reg_ref(regs::reg::ecx); }
-  constexpr reg_t& edx() { return reg_ref(regs::reg::edx); }
-  constexpr const reg_t& edx() const { return reg_ref(regs::reg::edx); }
-  constexpr reg_t& ebp() { return reg_ref(regs::reg::ebp); }
-  constexpr const reg_t& ebp() const { return reg_ref(regs::reg::ebp); }
-  constexpr reg_t& esp() { return reg_ref(regs::reg::esp); }
-  constexpr const reg_t& esp() const { return reg_ref(regs::reg::esp); }
-  constexpr reg_t& eip() { return reg_ref(regs::reg::eip); }
-  constexpr const reg_t& eip() const { return reg_ref(regs::reg::eip); }
+  constexpr decltype(auto) eax() { return reg_ref(regs::reg::eax); }
+  constexpr decltype(auto) eax() const { return reg_ref(regs::reg::eax); }
+  constexpr decltype(auto) ebx() { return reg_ref(regs::reg::ebx); }
+  constexpr decltype(auto) ebx() const { return reg_ref(regs::reg::ebx); }
+  constexpr decltype(auto) ecx() { return reg_ref(regs::reg::ecx); }
+  constexpr decltype(auto) ecx() const { return reg_ref(regs::reg::ecx); }
+  constexpr decltype(auto) edx() { return reg_ref(regs::reg::edx); }
+  constexpr decltype(auto) edx() const { return reg_ref(regs::reg::edx); }
+  constexpr decltype(auto) ebp() { return reg_ref(regs::reg::ebp); }
+  constexpr decltype(auto) ebp() const { return reg_ref(regs::reg::ebp); }
+  constexpr decltype(auto) esp() { return reg_ref(regs::reg::esp); }
+  constexpr decltype(auto) esp() const { return reg_ref(regs::reg::esp); }
+  constexpr decltype(auto) eip() { return reg_ref(regs::reg::eip); }
+  constexpr decltype(auto) eip() const { return reg_ref(regs::reg::eip); }
 
   vector<unit_t, amount_of_ram> ram;
   bool zf{false};
@@ -685,321 +685,6 @@ private:
 
   vector<reg_t, static_cast<size_t>(regs::reg::undef)> regs_vals{};
 };
-
-
-namespace assemble
-{
-  template <typename token_it_t>
-  constexpr auto get_next_opcodes(token_it_t &token_it)
-  {
-    using opcodes_t = vector<unit_t, instructions::get_max_eip_change()>;
-    using inst_t = instructions::instruction;
-
-    opcodes_t opcodes;
-    algo::fill(opcodes.begin(), opcodes.end(), instructions::instruction::none);
-    
-    const auto instruction = instructions::get_next_instruction(token_it);
-
-    opcodes.push_back(instruction);
-
-    switch(instruction)
-    {
-      case inst_t::exit: //exit
-      break;
-
-      case inst_t::je: // je pointer
-      {
-        const auto ip = algo::stoui(*algo::next(token_it));
-        opcodes.push_back(ip);
-      }break;
-
-      case inst_t::jmp: // jmp pointer
-      {
-        const auto ip = algo::stoui(*algo::next(token_it));
-        opcodes.push_back(ip);
-      }break;
-
-      case inst_t::add_reg_mem_ptr_reg_plus_val: // add reg , [ reg2 + val ]
-      {
-        const auto reg = regs::token_to_reg(*algo::next(token_it));
-        const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
-        const auto val = algo::stoui(*algo::next(token_it, 6));
-
-        opcodes.push_back(regs::to_unit_t(reg));
-        opcodes.push_back(regs::to_unit_t(reg2));
-        opcodes.push_back(val);
-      }break;
-
-      case inst_t::sub_reg_val: // sub reg , val
-      {
-        const auto reg = regs::token_to_reg(*algo::next(token_it));
-        const auto val = algo::stoui(*algo::next(token_it, 3));
-
-        opcodes.push_back(regs::to_unit_t(reg));
-        opcodes.push_back(val);
-      }break;
-
-      case inst_t::inc: // inc reg
-      {
-        const auto reg = regs::token_to_reg(*algo::next(token_it));
-        opcodes.push_back(regs::to_unit_t(reg));
-      }break;
-
-      case inst_t::cmp: // cmp reg , val
-      {
-        const auto reg = regs::token_to_reg(*algo::next(token_it));
-        const auto val = algo::stoui(*algo::next(token_it, 3));
-
-        opcodes.push_back(regs::to_unit_t(reg));
-        opcodes.push_back(val);
-      }break;
-
-      case inst_t::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
-      {
-        const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
-        const auto val = algo::stoui(*algo::next(token_it, 4));
-        const auto reg2 = regs::token_to_reg(*algo::next(token_it, 7));
-
-        opcodes.push_back(regs::to_unit_t(reg));
-        opcodes.push_back(val);
-        opcodes.push_back(regs::to_unit_t(reg2));
-      }break;
-
-      case inst_t::mov_mem_val_ptr_reg_plus_val: // mov [ reg + val ] , val2
-      {
-        const auto reg = regs::token_to_reg(*algo::next(token_it, 2));
-        const auto val = algo::stoui(*algo::next(token_it, 4));
-        const auto val2 = algo::stoui(*algo::next(token_it, 7));
-
-        opcodes.push_back(regs::to_unit_t(reg));
-        opcodes.push_back(val);
-        opcodes.push_back(val2);
-      }break;
-
-      case inst_t::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
-      {
-        const auto reg = regs::token_to_reg(*algo::next(token_it));
-        const auto reg2 = regs::token_to_reg(*algo::next(token_it, 4));
-        const auto val = algo::stoui(*algo::next(token_it, 6));
-
-        opcodes.push_back(regs::to_unit_t(reg));
-        opcodes.push_back(regs::to_unit_t(reg2));
-        opcodes.push_back(val);
-      }break;
-
-      case inst_t::mov_reg_reg: // mov reg , reg2
-      {
-        const auto reg = regs::token_to_reg(*algo::next(token_it));
-        const auto reg2 = regs::token_to_reg(*algo::next(token_it, 3));
-
-        opcodes.push_back(regs::to_unit_t(reg));
-        opcodes.push_back(regs::to_unit_t(reg2));
-      }break;
-
-      case inst_t::mov_reg_val: // mov reg , val
-      {
-        const auto reg = regs::token_to_reg(*algo::next(token_it));
-        const auto val = algo::stoui(*algo::next(token_it, 3));
-
-        opcodes.push_back(regs::to_unit_t(reg));
-        opcodes.push_back(val);
-      }break;
-
-      default:
-      break;
-    }
-
-    const auto token_count = instructions::get_token_count(instruction);
-    algo::advance(token_it, token_count);
-
-    return opcodes;
-  }
-
-  template <size_t amount_of_ram>
-  class assembler
-  {
-  public:
-    template <typename tokens_t>
-    constexpr auto assemble(tokens_t tokens) const
-    {
-      machine<amount_of_ram> m;
-
-      auto opcodes_dest = m.ram.begin();
-
-      auto token_it = tokens.begin();
-      while(token_it != tokens.end())
-      {
-        const auto opcodes = get_next_opcodes(token_it);
-        algo::copy(opcodes.begin(), opcodes.end(), opcodes_dest);
-        algo::advance(opcodes_dest, opcodes.size());
-      }
-      
-      m.esp() = amount_of_ram - 1;
-      m.eip() = 0u;
-
-      return m;
-    }
-  };
-}
-
-namespace execute
-{
-  template <typename machine_t>
-  constexpr auto get_next_instruction(machine_t& machine)
-  {
-    return static_cast<instructions::instruction>(machine.ram[machine.eip()]);
-  }
-
-  template <typename machine_t>
-  constexpr bool execute_next_instruction(machine_t& machine)
-  {
-    using inst_t = instructions::instruction;
-
-    const auto instruction = get_next_instruction(machine);
-    const auto ip = machine.eip();
-
-    switch(instruction)
-    {
-      case inst_t::je: // je pointer
-      {
-        if(machine.zf)
-        {
-          const auto new_ip = machine.ram[ip + 1];
-          machine.eip() = new_ip;
-          return false;
-        }
-      }break;
-
-      case inst_t::jmp: // jmp pointer
-      {
-        const auto new_ip = machine.ram[ip + 1];
-        machine.eip() = new_ip;
-        return false;
-      }break;
-
-      case inst_t::add_reg_mem_ptr_reg_plus_val: // add reg reg2 val
-      {
-        const auto reg = machine.ram[ip + 1];
-        const auto reg_val = machine.get_reg(reg);
-        const auto reg2_val = machine.get_reg(machine.ram[ip + 2]);
-        const auto val = machine.ram[ip + 3];
-
-        const auto mem_ptr = reg2_val + val;
-        const auto val_to_add = machine.ram[mem_ptr];
-
-        const auto new_reg_val = reg_val + val_to_add;
-        machine.set_reg(reg, new_reg_val);
-      }break;
-
-      case inst_t::sub_reg_val: // sub reg val
-      {
-        const auto reg = machine.ram[ip + 1];
-        const auto reg_val = machine.get_reg(reg);
-        const auto val = machine.ram[ip + 2];
-
-        const auto new_reg_val = reg_val - val;
-        machine.set_reg(reg, new_reg_val);
-      }break;
-
-      case inst_t::inc: // inc reg
-      {
-        const auto reg = machine.ram[ip + 1];
-        const auto reg_val = machine.get_reg(reg);
-
-        machine.set_reg(reg, reg_val + 1);
-      }break;
-
-      case inst_t::cmp: // cmp reg val
-      {
-        const auto reg = machine.ram[ip + 1];
-        const auto reg_val = machine.get_reg(reg);
-        const auto val = machine.ram[ip + 2];
-
-        machine.zf = reg_val == val;
-      }break;
-
-      case inst_t::mov_mem_reg_ptr_reg_plus_val: // mov [ reg + val ] , reg2
-      {
-        const auto reg = machine.ram[ip + 1];
-        const auto reg_val = machine.get_reg(reg);
-        const auto val = machine.ram[ip + 2];
-        const auto reg2 = machine.ram[ip + 3];
-        const auto reg2_val = machine.get_reg(reg2);
-
-        const auto mem_ptr = reg_val + val;
-        machine.ram[mem_ptr] = reg2_val;
-      }break;
-
-      case inst_t::mov_mem_val_ptr_reg_plus_val: // mov [ reg + val ] , val2
-      {
-        const auto reg = machine.ram[ip + 1];
-        const auto reg_val = machine.get_reg(reg);
-        const auto val = machine.ram[ip + 2];
-        const auto val2 = machine.ram[ip + 3];
-
-        const auto mem_ptr = reg_val + val;
-        machine.ram[mem_ptr] = val2;
-      }break;
-
-      case inst_t::mov_reg_mem_ptr_reg_plus_val: // mov reg , [ reg2 + val ]
-      {
-        const auto reg = machine.ram[ip + 1];
-        const auto reg2 = machine.ram[ip + 2];
-        const auto reg2_val = machine.get_reg(reg2);
-        const auto val = machine.ram[ip + 3];
-
-        const auto mem_ptr = reg2_val + val;
-        const auto new_reg_val = machine.ram[mem_ptr];
-        machine.set_reg(reg, new_reg_val);
-      }break;
-
-      case inst_t::mov_reg_reg: // mov reg , reg2
-      {
-        const auto reg = machine.ram[ip + 1];
-        const auto reg2 = machine.ram[ip + 2];
-        const auto reg2_val = machine.get_reg(reg2);
-
-        machine.set_reg(reg, reg2_val);
-      }break;
-
-      case inst_t::mov_reg_val: // mov reg , val
-      {
-        const auto reg = machine.ram[ip + 1];
-        const auto val = machine.ram[ip + 2];
-
-        machine.set_reg(reg, val);
-      }break;
-
-      default:
-      break;
-    }
-
-    return true;
-  }
-
-  template <typename machine_t>
-  constexpr void adjust_eip(machine_t& machine)
-  {
-    const auto instruction = get_next_instruction(machine);
-    const auto eip_change = instructions::get_ip_change(instruction);
-    machine.eip() += eip_change;
-  }
-
-  template <typename machine_t>
-  constexpr auto execute(machine_t machine)
-  {
-    while(get_next_instruction(machine) != instructions::instruction::exit)
-    {
-      const auto need_to_change_eip = execute_next_instruction(machine);
-      if(need_to_change_eip)
-      {
-        adjust_eip(machine);
-      }
-    }
-
-    return machine.eax();
-  }
-}
 
 constexpr auto asm_code = 
   "sub esp , 4 "
@@ -1029,20 +714,14 @@ constexpr auto asm_code =
 int main()
 {
   constexpr auto tokens_count = algo::count(asm_code.begin(), asm_code.end(), ' ') + 1;
-  constexpr tokenizer<tokens_count> ams_tokenizer;
-  constexpr auto tokens = ams_tokenizer.tokenize(asm_code);
+  tokenizer<tokens_count> ams_tokenizer;
+  auto tokens = ams_tokenizer.tokenize(asm_code);
 
   constexpr auto labels_count = algo::count(asm_code.begin(), asm_code.end(), ':');
-  constexpr labels::labels_extractor<labels_count> labels_extractor;
-  constexpr auto extracted_labels_metadata = labels_extractor.extract(tokens);
-  constexpr labels::labels_replacer<tokens_count> labels_replacer;
-  constexpr auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels_metadata);
+  labels::labels_extractor<labels_count> labels_extractor;
+  auto extracted_labels_metadata = labels_extractor.extract(tokens);
+  labels::labels_replacer<tokens_count> labels_replacer;
+  auto tokens_replaced_labels = labels_replacer.replace(tokens, extracted_labels_metadata);
 
-  constexpr assemble::assembler<1024> assembler;
-  constexpr auto m = assembler.assemble(tokens_replaced_labels);
-
-  constexpr auto result = execute::execute(m);
-
-  return result;
+  return 0;
 }
-

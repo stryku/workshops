@@ -2,7 +2,6 @@
 #include <iterator>
 #include <algorithm>
 #include <type_traits>
-#include <array>
 
 //unit used in machine for memory cells, registers etc.
 using unit_t = uint64_t;
@@ -119,12 +118,12 @@ public:
 
   constexpr auto begin()
   {
-    return m_arr.begin();
+    return m_arr;
   }
 
   constexpr auto begin() const
   {
-    return m_arr.begin();
+    return m_arr;
   }
 
   constexpr auto end()
@@ -172,15 +171,15 @@ public:
 protected:
   constexpr auto reserved_end()
   {
-    return m_arr.end();
+    return begin() + n;
   }
   constexpr auto reserved_end() const
   {
-    return m_arr.end();
+    return begin() + n;
   }
 
 private:
-  std::array<ty, n> m_arr{};
+  ty m_arr[n]{};
   size_t m_size{ 0u };
 };
 
