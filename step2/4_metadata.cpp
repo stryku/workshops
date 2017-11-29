@@ -555,12 +555,12 @@ constexpr auto asm_code =
 int main()
 {
   constexpr auto tokens_count = algo::count(asm_code.begin(), asm_code.end(), ' ') + 1;
-  constexpr tokenizer<tokens_count> ams_tokenizer;
-  constexpr auto tokens = ams_tokenizer.tokenize(asm_code);
+  tokenizer<tokens_count> ams_tokenizer;
+  auto tokens = ams_tokenizer.tokenize(asm_code);
 
   constexpr auto labels_count = algo::count(asm_code.begin(), asm_code.end(), ':');
-  constexpr labels::labels_extractor<labels_count> labels_extractor;
-  constexpr auto extracted_labels_metadata = labels_extractor.extract(tokens);
+  labels::labels_extractor<labels_count> labels_extractor;
+  auto extracted_labels_metadata = labels_extractor.extract(tokens);
 
   return 0;
 }
