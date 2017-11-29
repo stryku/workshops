@@ -2,6 +2,7 @@
 #include <iterator>
 #include <algorithm>
 #include <type_traits>
+#include <array>
 
 namespace algo
 {
@@ -31,12 +32,12 @@ public:
 
   constexpr auto begin()
   {
-    return m_arr;
+    return m_arr.begin();
   }
 
   constexpr auto begin() const
   {
-    return m_arr;
+    return m_arr.begin();
   }
 
   constexpr auto end()
@@ -59,11 +60,6 @@ public:
     m_arr[m_size++] = val;
   }
 
-  constexpr auto resize_to_reserved()
-  {
-    m_size = n;
-  }
-
   template <size_t rhs_n>
   constexpr auto operator==(const vector<ty, rhs_n>& rhs) const
   {
@@ -71,18 +67,23 @@ public:
         && algo::equal(begin(), end(), rhs.begin());
   }
 
+  constexpr auto resize_to_reserved()
+  {
+    m_size = n;
+  }
+
 protected:
   constexpr auto reserved_end()
   {
-    return begin() + n;
+    return m_arr.end();
   }
   constexpr auto reserved_end() const
   {
-    return begin() + n;
+    return m_arr.end();
   }
 
 private:
-  ty m_arr[n];
+  std::array<ty, n> m_arr;
   size_t m_size;
 };
 

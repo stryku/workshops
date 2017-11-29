@@ -2,6 +2,7 @@
 #include <iterator>
 #include <algorithm>
 #include <type_traits>
+#include <array>
 
 namespace traits
 {
@@ -115,12 +116,12 @@ public:
 
   constexpr auto begin()
   {
-    return m_arr;
+    return m_arr.begin();
   }
 
   constexpr auto begin() const
   {
-    return m_arr;
+    return m_arr.begin();
   }
 
   constexpr auto end()
@@ -168,15 +169,15 @@ public:
 protected:
   constexpr auto reserved_end()
   {
-    return begin() + n;
+    return m_arr.end();
   }
   constexpr auto reserved_end() const
   {
-    return begin() + n;
+    return m_arr.end();
   }
 
 private:
-  ty m_arr[n]{};
+  std::array<ty, n> m_arr{};
   size_t m_size{ 0u };
 };
 

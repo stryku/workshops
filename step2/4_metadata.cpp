@@ -2,6 +2,7 @@
 #include <iterator>
 #include <algorithm>
 #include <type_traits>
+#include <array>
 
 //unit used in machine for memory cells, registers etc.
 using unit_t = uint64_t;
@@ -118,12 +119,12 @@ public:
 
   constexpr auto begin()
   {
-    return m_arr;
+    return m_arr.begin();
   }
 
   constexpr auto begin() const
   {
-    return m_arr;
+    return m_arr.begin();
   }
 
   constexpr auto end()
@@ -171,15 +172,15 @@ public:
 protected:
   constexpr auto reserved_end()
   {
-    return begin() + n;
+    return m_arr.end();
   }
   constexpr auto reserved_end() const
   {
-    return begin() + n;
+    return m_arr.end();
   }
 
 private:
-  ty m_arr[n]{};
+  std::array<ty, n> m_arr{};
   size_t m_size{ 0u };
 };
 
@@ -562,56 +563,5 @@ int main()
   constexpr auto extracted_labels_metadata = labels_extractor.extract(tokens);
 
   return 0;
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-namespace tests
-{
-  namespace _s_tests
-  {
-      constexpr auto str = "arr"_s;
-
-      static_assert(str.size() == 3u);
-      static_assert(str[0] == 'a');
-      static_assert(str[1] == 'r');
-      static_assert(str[2] == 'r');
-      static_assert(str[3] == '\0');
-  }
-
-  namespace fixed_string_tests
-  {
-    constexpr auto zero = algo::to_string(0u);
-    constexpr auto one = algo::to_string(1u);
-    constexpr auto twelve = algo::to_string(12u);
-    constexpr auto big = algo::to_string(147129847u);
-
-    constexpr auto expected_zero = "0"_s;
-    constexpr auto expected_one = "1"_s;
-    constexpr auto expected_twelve = "1"_s;
-    constexpr auto expected_big = "147129847"_s;
-
-    static_assert(zero == expected_zero);
-    static_assert(one == expected_one);
-  }
-
-  namespace tokenize
-  {
-    constexpr auto text = "a b c"_s;
-    constexpr auto splt = tokenizer<3u>{};
-
-    static_assert(splt.tokenize(text).size() == 3);
-
-    constexpr auto tokens = splt.tokenize(text);
-    constexpr auto a = "a"_s;
-    constexpr auto b = "b"_s;
-    constexpr auto c = "c"_s;
-    static_assert(tokens[0] == a);
-    static_assert(tokens[1] == b);
-    static_assert(tokens[2] == c);
-  }
 }
 
